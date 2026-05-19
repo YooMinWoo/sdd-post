@@ -1,5 +1,6 @@
 package com.example.post.adapter.in.web;
 
+import com.example.post.application.exception.DuplicateEmailException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Instant;
@@ -29,6 +30,15 @@ public class GlobalExceptionHandler {
 	) {
 		return ResponseEntity.badRequest()
 				.body(errorResponse("INVALID_REQUEST", exception.getMessage(), request));
+	}
+
+	@ExceptionHandler(DuplicateEmailException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateEmailException(
+			DuplicateEmailException exception,
+			HttpServletRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(errorResponse("DUPLICATE_EMAIL", exception.getMessage(), request));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)

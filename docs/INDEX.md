@@ -31,3 +31,4 @@
 
 - [001-post-create](../specs/001-post-create/spec.md): 제목, 본문, 작성자로 게시글 작성
 - [002-api-error-swagger](../specs/002-api-error-swagger/spec.md): 전역 API 에러 처리와 한글 Swagger 문서화
+- [003-member-signup](../specs/003-member-signup/spec.md): 이메일, 비밀번호, 닉네임으로 회원가입

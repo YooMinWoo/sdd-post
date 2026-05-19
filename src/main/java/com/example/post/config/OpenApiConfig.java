@@ -21,8 +21,13 @@ public class OpenApiConfig {
 				.servers(List.of(new Server()
 						.url("/")
 						.description("현재 서버")))
-				.tags(List.of(new Tag()
-						.name("게시글")
-						.description("게시글 작성 API")));
+				.tags(List.of(
+						new Tag()
+								.name("게시글")
+								.description("게시글 작성 API"),
+						new Tag()
+								.name("인증/회원")
+								.description("회원가입 API")
+				));
 	}
 }
