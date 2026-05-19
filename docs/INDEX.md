@@ -1,0 +1,29 @@
+# Documentation Index
+
+이 디렉터리는 프로젝트의 장기 개발 기준과 아키텍처 문서를 관리한다.
+
+## 문서 목록
+
+- [ARCHITECTURE.md](ARCHITECTURE.md): DDD + 헥사고날 아키텍처 기준
+- [CONVENTIONS.md](CONVENTIONS.md): 패키지, 명명, 코딩, 문서 작성 규칙
+- [TESTING.md](TESTING.md): 테스트 계층과 실행 기준
+- [DOMAIN_GLOSSARY.md](DOMAIN_GLOSSARY.md): 게시판 도메인 용어집
+- [adr/0001-architecture-style.md](adr/0001-architecture-style.md): 아키텍처 스타일 결정 기록
+
+## 기능 명세 위치
+
+기능별 SDD 문서는 `specs/{번호}-{기능명}/` 아래에 둔다.
+
+필수 파일:
+
+- `spec.md`
+- `plan.md`
+- `tasks.md`
+- `acceptance.md`
+
+## 갱신 규칙
+
+- 새 공통 문서를 추가하면 이 파일에 링크를 추가한다.
+- 새로운 ADR을 추가하면 이 파일에 링크를 추가한다.
+- 기능 명세는 개별 기능 완료 후 필요할 때만 대표 링크를 추가한다.
+
