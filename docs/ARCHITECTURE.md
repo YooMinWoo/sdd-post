@@ -1,12 +1,12 @@
-# Architecture
+# 아키텍처
 
-이 프로젝트는 Spring Boot 기반 게시판 애플리케이션이며, DDD와 헥사고날 아키텍처를 기준으로 개발한다.
+이 프로젝트는 Spring Boot 기반 게시판 애플리케이션이며, DDD와 헥사고날 아키텍처를 기본 방향으로 개발한다.
 
 ## 목표
 
 - 도메인 규칙을 프레임워크와 분리한다.
 - 유스케이스 중심으로 기능을 설계한다.
-- 입출력 기술(Web, DB, Security, 외부 API)을 어댑터로 격리한다.
+- 입출력 기술(Web, DB, Security, 외부 API)은 어댑터로 격리한다.
 - 테스트 가능한 구조를 유지한다.
 
 ## 계층 방향
@@ -21,7 +21,7 @@ adapter -> application -> domain
 
 ## 권장 패키지 구조
 
-기능이 생기기 전까지 실제 패키지를 미리 만들지 않는다. 기능 구현 시에는 `plan.md`에서 패키지 구조를 먼저 확정한다.
+기능을 만들기 전 실제 패키지를 미리 만들지 않는다. 기능 구현 시 `plan.md`에서 패키지 구조를 먼저 확정한다.
 
 기본 방향:
 
@@ -44,7 +44,7 @@ com.example.post
 
 ## DDD 기준
 
-- Aggregate: 일관성 경계를 가진 도메인 객체 묶음
+- Aggregate: 일관성 경계를 가지는 도메인 객체 묶음
 - Entity: 식별자를 가지며 생명주기가 있는 도메인 객체
 - Value Object: 값으로 동일성을 판단하는 불변 객체
 - Domain Service: 특정 Entity나 Value Object에 자연스럽게 속하지 않는 도메인 규칙
@@ -52,17 +52,17 @@ com.example.post
 
 ## 헥사고날 기준
 
-- Inbound Adapter: HTTP Controller, CLI, 메시지 소비자 등 외부 입력을 받는 구성요소
+- Inbound Adapter: HTTP Controller, CLI, 메시지 소비자처럼 외부 입력을 받는 구성요소
 - Inbound Port: 유스케이스를 외부에 노출하는 애플리케이션 인터페이스
 - Application Service: 유스케이스 흐름과 트랜잭션 경계를 담당
-- Outbound Port: 저장소, 외부 API, 메시징 등 외부 기능에 대한 요구사항
-- Outbound Adapter: JPA Repository, 외부 API Client 등 실제 기술 구현
+- Outbound Port: 저장소, 외부 API, 메시지 발행처럼 외부 기능에 대한 요구사항
+- Outbound Adapter: JPA Repository, 외부 API Client 같은 실제 기술 구현
 
 ## Spring 사용 기준
 
 - Spring Annotation은 주로 application, adapter, config 계층에서 사용한다.
 - domain 계층에는 가능한 한 Spring Annotation을 두지 않는다.
-- JPA Entity와 도메인 모델을 분리할지 여부는 각 기능의 `plan.md`에서 결정한다.
+- JPA Entity는 도메인 모델과 분리할지 여부를 기능별 `plan.md`에서 결정한다.
 - 트랜잭션 경계는 Application Service에 둔다.
 
 ## 기능 추가 절차
@@ -73,4 +73,3 @@ com.example.post
 4. `acceptance.md`로 완료 조건을 정의한다.
 5. 구현 전에 `spec.md`와 `plan.md`를 다시 검토한다.
 6. 구현 후 `tasks.md`와 필요한 공통 문서를 갱신한다.
-
