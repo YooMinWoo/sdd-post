@@ -33,6 +33,7 @@ specs/{번호}-{기능명}/acceptance.md
 
 ## 계층별 명명
 
+- Bounded Context Package: `com.example.post.{bounded-context}`
 - Inbound Port: `{UseCase}UseCase`
 - Outbound Port: `{Domain}RepositoryPort`, `{ExternalSystem}Port`
 - Application Service: `{UseCase}Service`
@@ -44,6 +45,8 @@ specs/{번호}-{기능명}/acceptance.md
 예시:
 
 ```text
+com.example.post.board
+com.example.post.member
 CreatePostUseCase
 PostRepositoryPort
 CreatePostService
@@ -65,12 +68,14 @@ PostPersistenceAdapter
 - 트랜잭션 경계는 Application Service에 둔다.
 - Application Service는 Controller DTO에 의존하지 않는다.
 - 포트 인터페이스는 구현 기술을 드러내지 않는다.
+- 다른 bounded context의 애플리케이션 서비스나 어댑터에 직접 의존하지 않는다.
 
 ## 어댑터 규칙
 
 - Web Adapter는 HTTP 상태, 요청, 응답 변환을 담당한다.
 - Persistence Adapter는 도메인 모델과 영속성 모델 간 변환을 담당한다.
 - 외부 API Adapter는 호출, 타임아웃, 응답 변환과 실패 처리를 명확히 다룬다.
+- 전역 예외 처리, 공통 응답, 공통 설정은 `global` 패키지에 둔다.
 
 ## 문서 갱신 규칙
 

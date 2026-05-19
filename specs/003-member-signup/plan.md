@@ -33,15 +33,15 @@ DDD와 헥사고날 아키텍처에 맞춰 회원가입 기능을 구현한다. 
 ## 패키지 배치
 
 ```text
-com.example.post.domain.model
-com.example.post.application.exception
-com.example.post.application.port.in
-com.example.post.application.port.out
-com.example.post.application.service
-com.example.post.adapter.in.web
-com.example.post.adapter.out.persistence
-com.example.post.adapter.out.security
-com.example.post.config
+com.example.post.member.domain.model
+com.example.post.member.application.exception
+com.example.post.member.application.port.in
+com.example.post.member.application.port.out
+com.example.post.member.application.service
+com.example.post.member.adapter.in.web
+com.example.post.member.adapter.out.persistence
+com.example.post.member.adapter.out.security
+com.example.post.global.config
 ```
 
 ## 테스트 전략

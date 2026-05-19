@@ -7,11 +7,12 @@
 - 도메인 규칙을 프레임워크와 분리한다.
 - 유스케이스 중심으로 기능을 설계한다.
 - 입출력 기술(Web, DB, Security, 외부 API)은 어댑터로 격리한다.
+- bounded context별 책임 경계를 패키지 구조로 드러낸다.
 - 테스트 가능한 구조를 유지한다.
 
 ## 계층 방향
 
-의존성은 바깥에서 안쪽으로만 흐른다.
+의존성은 각 bounded context 내부에서 바깥에서 안쪽으로만 흐른다.
 
 ```text
 adapter -> application -> domain
@@ -21,25 +22,35 @@ adapter -> application -> domain
 
 ## 권장 패키지 구조
 
-기능을 만들기 전 실제 패키지를 미리 만들지 않는다. 기능 구현 시 `plan.md`에서 패키지 구조를 먼저 확정한다.
+패키지는 bounded context를 먼저 나누고, 각 context 내부에서 헥사고날 계층을 유지한다. 기능 구현 시 `plan.md`에서 대상 context와 패키지 구조를 먼저 확정한다.
 
 기본 방향:
 
 ```text
 com.example.post
-  domain
-    {aggregate}
-  application
-    port
+  {bounded-context}
+    domain
+    application
+      port
+        in
+        out
+      service
+    adapter
       in
+        web
       out
-    service
-  adapter
-    in
-      web
-    out
-      persistence
-  config
+        persistence
+  global
+    config
+    web
+```
+
+현재 context:
+
+```text
+com.example.post.board
+com.example.post.member
+com.example.post.global
 ```
 
 ## DDD 기준
@@ -60,15 +71,16 @@ com.example.post
 
 ## Spring 사용 기준
 
-- Spring Annotation은 주로 application, adapter, config 계층에서 사용한다.
+- Spring Annotation은 주로 application, adapter, global 계층에서 사용한다.
 - domain 계층에는 가능한 한 Spring Annotation을 두지 않는다.
-- JPA Entity는 도메인 모델과 분리할지 여부를 기능별 `plan.md`에서 결정한다.
+- JPA Entity는 도메인 모델과 분리한다.
 - 트랜잭션 경계는 Application Service에 둔다.
+- 공통 설정과 전역 예외 처리는 `global` 패키지에 둔다.
 
 ## 기능 추가 절차
 
 1. `specs/{번호}-{기능명}/spec.md`로 요구사항과 도메인 규칙을 정의한다.
-2. `plan.md`로 계층별 설계, 포트, 어댑터, 테스트 전략을 정의한다.
+2. `plan.md`로 bounded context, 계층별 설계, 포트, 어댑터, 테스트 전략을 정의한다.
 3. `tasks.md`로 구현 단위를 체크박스로 나눈다.
 4. `acceptance.md`로 완료 조건을 정의한다.
 5. 구현 전에 `spec.md`와 `plan.md`를 다시 검토한다.
