@@ -34,3 +34,4 @@
 - [003-member-signup](../specs/003-member-signup/spec.md): 이메일, 비밀번호, 닉네임으로 회원가입
 - [004-bounded-context-packages](../specs/004-bounded-context-packages/spec.md): bounded context 기준 패키지 분리
 - [005-member-login](../specs/005-member-login/spec.md): accessToken과 refreshToken 기반 로그인
+- [006-api-response-swagger-cleanup](../specs/006-api-response-swagger-cleanup/spec.md): 표준 API 응답과 Swagger 문서 정리

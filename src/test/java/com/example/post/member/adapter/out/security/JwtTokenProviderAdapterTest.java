@@ -21,11 +21,12 @@ class JwtTokenProviderAdapterTest {
 
 	private static final String ACCESS_SECRET = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
 	private static final String REFRESH_SECRET = "YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=";
+	private static final Instant FIXED_NOW = Instant.parse("2026-05-20T00:00:00Z");
 
 	private final JwtProperties jwtProperties = jwtProperties();
 	private final JwtTokenProviderAdapter adapter = new JwtTokenProviderAdapter(
 			jwtProperties,
-			Clock.fixed(Instant.parse("2026-05-20T00:00:00Z"), ZoneOffset.UTC)
+			Clock.fixed(FIXED_NOW, ZoneOffset.UTC)
 	);
 
 	@Test
@@ -63,6 +64,7 @@ class JwtTokenProviderAdapterTest {
 	private static Claims parse(String token, String secret) {
 		return Jwts.parser()
 				.verifyWith(secretKey(secret))
+				.clock(() -> java.util.Date.from(FIXED_NOW))
 				.build()
 				.parseSignedClaims(token)
 				.getPayload();

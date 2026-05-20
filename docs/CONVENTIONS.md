@@ -77,6 +77,15 @@ PostPersistenceAdapter
 - 외부 API Adapter는 호출, 타임아웃, 응답 변환과 실패 처리를 명확히 다룬다.
 - 전역 예외 처리, 공통 응답, 공통 설정은 `global` 패키지에 둔다.
 
+## API 응답과 Swagger 규칙
+
+- 성공과 실패 응답은 공통 `ApiResponse<T>` 구조를 기본으로 사용한다.
+- 성공 응답의 `message`는 한글 메시지를 사용하고, 실패 응답의 `message`는 안정적인 에러 코드를 사용한다.
+- 본문이 없는 `204 No Content` 응답은 공통 응답 본문을 강제하지 않는다.
+- 컨트롤러 Swagger 문서는 `global.web.swagger`의 API별 문서 어노테이션을 우선 사용한다.
+- 컨트롤러에는 태그와 API별 문서 어노테이션만 직접 작성한다.
+- 요청/응답 DTO의 필드 설명은 DTO의 `@Schema`에 작성한다.
+
 ## 문서 갱신 규칙
 
 - 공통 규칙이 바뀌면 `docs/CONVENTIONS.md`를 갱신한다.

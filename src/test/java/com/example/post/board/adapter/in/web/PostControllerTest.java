@@ -38,11 +38,16 @@ class PostControllerTest {
 								}
 								"""))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(1))
-				.andExpect(jsonPath("$.title").value("Hello"))
-				.andExpect(jsonPath("$.content").value("First post"))
-				.andExpect(jsonPath("$.author").value("minu"))
-				.andExpect(jsonPath("$.createdAt").value("2026-05-20T00:00:00Z"));
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("게시글이 생성되었습니다."))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.title").value("Hello"))
+				.andExpect(jsonPath("$.data.content").value("First post"))
+				.andExpect(jsonPath("$.data.author").value("minu"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
 	}
 
 	@Test
@@ -59,8 +64,10 @@ class PostControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("title is required"))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());
@@ -72,8 +79,10 @@ class PostControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("{"))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("MALFORMED_JSON"))
-				.andExpect(jsonPath("$.message").value("요청 본문을 읽을 수 없습니다."))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("MALFORMED_JSON"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());

@@ -51,11 +51,16 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(1))
-				.andExpect(jsonPath("$.email").value("minu@example.com"))
-				.andExpect(jsonPath("$.nickname").value("minu"))
-				.andExpect(jsonPath("$.createdAt").value("2026-05-20T00:00:00Z"))
-				.andExpect(jsonPath("$.password").doesNotExist());
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("회원가입이 완료되었습니다."))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.email").value("minu@example.com"))
+				.andExpect(jsonPath("$.data.nickname").value("minu"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.data.password").doesNotExist())
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
 	}
 
 	@Test
@@ -72,8 +77,10 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("email must be valid"))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/signup"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());
@@ -90,10 +97,15 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andExpect(jsonPath("$.accessToken").value("access-token"))
-				.andExpect(jsonPath("$.refreshToken").value("refresh-token"))
-				.andExpect(jsonPath("$.expiresIn").value(900));
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("로그인되었습니다."))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+				.andExpect(jsonPath("$.data.accessToken").value("access-token"))
+				.andExpect(jsonPath("$.data.refreshToken").value("refresh-token"))
+				.andExpect(jsonPath("$.data.expiresIn").value(900))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
 	}
 
 	@Test
@@ -109,8 +121,10 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"))
-				.andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 올바르지 않습니다."))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("INVALID_CREDENTIALS"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/login"));
 	}
 
@@ -124,10 +138,15 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.tokenType").value("Bearer"))
-				.andExpect(jsonPath("$.accessToken").value("new-access-token"))
-				.andExpect(jsonPath("$.refreshToken").value("new-refresh-token"))
-				.andExpect(jsonPath("$.expiresIn").value(900));
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("토큰이 재발급되었습니다."))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"))
+				.andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+				.andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"))
+				.andExpect(jsonPath("$.data.expiresIn").value(900))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
 	}
 
 	@Test
@@ -142,8 +161,10 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"))
-				.andExpect(jsonPath("$.message").value("유효하지 않은 refreshToken입니다."))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("INVALID_REFRESH_TOKEN"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/refresh"));
 	}
 
@@ -173,8 +194,10 @@ class AuthControllerTest {
 								}
 								"""))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("DUPLICATE_EMAIL"))
-				.andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."))
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("DUPLICATE_EMAIL"))
+				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/signup"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());

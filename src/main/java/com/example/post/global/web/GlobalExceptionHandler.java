@@ -26,54 +26,54 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
-	public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+	public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
 			IllegalArgumentException exception,
 			HttpServletRequest request
 	) {
 		return ResponseEntity.badRequest()
-				.body(errorResponse("INVALID_REQUEST", exception.getMessage(), request));
+				.body(errorResponse("INVALID_REQUEST", request));
 	}
 
 	@ExceptionHandler(DuplicateEmailException.class)
-	public ResponseEntity<ErrorResponse> handleDuplicateEmailException(
+	public ResponseEntity<ApiResponse<Void>> handleDuplicateEmailException(
 			DuplicateEmailException exception,
 			HttpServletRequest request
 	) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(errorResponse("DUPLICATE_EMAIL", exception.getMessage(), request));
+				.body(errorResponse("DUPLICATE_EMAIL", request));
 	}
 
 	@ExceptionHandler(InvalidCredentialsException.class)
-	public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
+	public ResponseEntity<ApiResponse<Void>> handleInvalidCredentialsException(
 			InvalidCredentialsException exception,
 			HttpServletRequest request
 	) {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body(errorResponse("INVALID_CREDENTIALS", exception.getMessage(), request));
+				.body(errorResponse("INVALID_CREDENTIALS", request));
 	}
 
 	@ExceptionHandler(InvalidRefreshTokenException.class)
-	public ResponseEntity<ErrorResponse> handleInvalidRefreshTokenException(
+	public ResponseEntity<ApiResponse<Void>> handleInvalidRefreshTokenException(
 			InvalidRefreshTokenException exception,
 			HttpServletRequest request
 	) {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body(errorResponse("INVALID_REFRESH_TOKEN", exception.getMessage(), request));
+				.body(errorResponse("INVALID_REFRESH_TOKEN", request));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
-	public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpServletRequest request) {
+	public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpServletRequest request) {
 		return ResponseEntity.badRequest()
-				.body(errorResponse("MALFORMED_JSON", "요청 본문을 읽을 수 없습니다.", request));
+				.body(errorResponse("MALFORMED_JSON", request));
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ErrorResponse> handleException(HttpServletRequest request) {
+	public ResponseEntity<ApiResponse<Void>> handleException(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(errorResponse("INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다.", request));
+				.body(errorResponse("INTERNAL_SERVER_ERROR", request));
 	}
 
-	private ErrorResponse errorResponse(String code, String message, HttpServletRequest request) {
-		return ErrorResponse.of(code, message, request.getRequestURI(), Instant.now(clock));
+	private ApiResponse<Void> errorResponse(String message, HttpServletRequest request) {
+		return ApiResponse.error(message, request.getRequestURI(), Instant.now(clock));
 	}
 }
