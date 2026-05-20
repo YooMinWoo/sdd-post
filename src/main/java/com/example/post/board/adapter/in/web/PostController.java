@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 @Tag(name = "게시글", description = "게시글 작성 API")
 public class PostController {
 
 	private final CreatePostUseCase createPostUseCase;
-
-	public PostController(CreatePostUseCase createPostUseCase) {
-		this.createPostUseCase = createPostUseCase;
-	}
 
 	@PostMapping
 	@Operation(summary = "게시글 작성", description = "제목, 본문, 작성자를 입력받아 새 게시글을 작성합니다.")

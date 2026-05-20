@@ -1,8 +1,15 @@
 package com.example.post.member.adapter.in.web;
 
+import com.example.post.member.application.port.in.LoginCommand;
+import com.example.post.member.application.port.in.LoginUseCase;
+import com.example.post.member.application.port.in.LogoutCommand;
+import com.example.post.member.application.port.in.LogoutUseCase;
+import com.example.post.member.application.port.in.RefreshTokenCommand;
+import com.example.post.member.application.port.in.RefreshTokenUseCase;
 import com.example.post.member.application.port.in.SignupCommand;
 import com.example.post.member.application.port.in.SignupResult;
 import com.example.post.member.application.port.in.SignupUseCase;
+import com.example.post.member.application.port.in.TokenResult;
 import com.example.post.global.web.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,14 +29,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "인증/회원", description = "회원가입 API")
+@RequiredArgsConstructor
+@Tag(name = "인증/회원", description = "회원가입과 토큰 기반 인증 API")
 public class AuthController {
 
 	private final SignupUseCase signupUseCase;
-
-	public AuthController(SignupUseCase signupUseCase) {
-		this.signupUseCase = signupUseCase;
-	}
+	private final LoginUseCase loginUseCase;
+	private final RefreshTokenUseCase refreshTokenUseCase;
+	private final LogoutUseCase logoutUseCase;
 
 	@PostMapping("/signup")
 	@Operation(summary = "회원가입", description = "이메일, 비밀번호, 닉네임으로 새 회원을 생성합니다.")
@@ -87,5 +95,84 @@ public class AuthController {
 						result.nickname(),
 						result.createdAt()
 				));
+	}
+
+	@PostMapping("/login")
+	@Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하고 accessToken과 refreshToken을 발급합니다.")
+	@ApiResponses({
+			@ApiResponse(
+					responseCode = "200",
+					description = "로그인 성공",
+					content = @Content(
+							mediaType = MediaType.APPLICATION_JSON_VALUE,
+							schema = @Schema(implementation = TokenResponse.class),
+							examples = @ExampleObject(value = """
+									{
+									  "tokenType": "Bearer",
+									  "accessToken": "access.jwt.token",
+									  "refreshToken": "refresh.jwt.token",
+									  "expiresIn": 900
+									}
+									""")
+					)
+			),
+			@ApiResponse(
+					responseCode = "401",
+					description = "이메일 또는 비밀번호 오류",
+					content = @Content(
+							mediaType = MediaType.APPLICATION_JSON_VALUE,
+							schema = @Schema(implementation = ErrorResponse.class)
+					)
+			)
+	})
+	public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
+		return ResponseEntity.ok(toTokenResponse(
+				loginUseCase.login(new LoginCommand(request.email(), request.password()))
+		));
+	}
+
+	@PostMapping("/refresh")
+	@Operation(summary = "토큰 재발급", description = "refreshToken을 검증하고 accessToken과 refreshToken을 새로 발급합니다.")
+	@ApiResponses({
+			@ApiResponse(
+					responseCode = "200",
+					description = "토큰 재발급 성공",
+					content = @Content(
+							mediaType = MediaType.APPLICATION_JSON_VALUE,
+							schema = @Schema(implementation = TokenResponse.class)
+					)
+			),
+			@ApiResponse(
+					responseCode = "401",
+					description = "유효하지 않은 refreshToken",
+					content = @Content(
+							mediaType = MediaType.APPLICATION_JSON_VALUE,
+							schema = @Schema(implementation = ErrorResponse.class)
+					)
+			)
+	})
+	public ResponseEntity<TokenResponse> refresh(@RequestBody RefreshTokenRequest request) {
+		return ResponseEntity.ok(toTokenResponse(
+				refreshTokenUseCase.refresh(new RefreshTokenCommand(request.refreshToken()))
+		));
+	}
+
+	@PostMapping("/logout")
+	@Operation(summary = "로그아웃", description = "Redis에 저장된 refreshToken을 삭제합니다.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "204", description = "로그아웃 성공")
+	})
+	public ResponseEntity<Void> logout(@RequestBody LogoutRequest request) {
+		logoutUseCase.logout(new LogoutCommand(request.refreshToken()));
+		return ResponseEntity.noContent().build();
+	}
+
+	private static TokenResponse toTokenResponse(TokenResult result) {
+		return new TokenResponse(
+				result.tokenType(),
+				result.accessToken(),
+				result.refreshToken(),
+				result.expiresIn()
+		);
 	}
 }

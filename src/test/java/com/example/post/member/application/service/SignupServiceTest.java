@@ -13,6 +13,7 @@ import com.example.post.member.domain.model.Member;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class SignupServiceTest {
@@ -66,6 +67,16 @@ class SignupServiceTest {
 		@Override
 		public boolean existsByEmail(String email) {
 			return existingEmails.getOrDefault(email, false);
+		}
+
+		@Override
+		public Optional<Member> findByEmail(String email) {
+			return Optional.empty();
+		}
+
+		@Override
+		public Optional<Member> findById(Long id) {
+			return Optional.empty();
 		}
 
 		@Override

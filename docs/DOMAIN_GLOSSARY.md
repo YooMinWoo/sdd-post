@@ -14,6 +14,12 @@
 | 이메일 | Email | 회원을 식별하고 로그인에 사용할 수 있는 주소 |
 | 비밀번호 | Password | 회원 본인 확인에 사용하는 비밀 값이며 원문으로 저장하지 않는다 |
 | 닉네임 | Nickname | 게시판에서 회원을 표시할 때 사용하는 이름 |
+| 로그인 | Login | 회원이 이메일과 비밀번호로 본인 계정을 인증하는 행위 |
+| accessToken | Access Token | 인증이 필요한 API 호출에 사용하는 짧은 만료 시간의 토큰 |
+| refreshToken | Refresh Token | accessToken 재발급에 사용하는 긴 만료 시간의 토큰 |
+| 토큰 재발급 | Token Refresh | 유효한 refreshToken으로 새로운 accessToken과 refreshToken을 발급받는 행위 |
+| 로그아웃 | Logout | Redis에 저장된 refreshToken을 삭제해 이후 재발급을 막는 행위 |
+| Redis 토큰 저장소 | Redis Token Store | refreshToken을 저장하고 만료 시간을 관리하는 외부 저장소 |
 | 댓글 | Comment | 게시글에 대해 작성하는 하위 의견 |
 | 첨부파일 | Attachment | 게시글 또는 댓글에 연결되는 파일 |
 | 조회수 | View Count | 게시글이 조회된 횟수 |

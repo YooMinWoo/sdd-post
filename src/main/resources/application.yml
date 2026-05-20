@@ -1,3 +1,15 @@
 spring:
   application:
     name: post
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+jwt:
+  access-token:
+    secret: ${JWT_ACCESS_TOKEN_SECRET:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
+    expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION_TIME:900}
+  refresh-token:
+    secret: ${JWT_REFRESH_TOKEN_SECRET:YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=}
+    expiration-seconds: ${JWT_REFRESH_TOKEN_EXPIRATION_TIME:1209600}

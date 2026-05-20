@@ -1,6 +1,8 @@
 package com.example.post.global.web;
 
 import com.example.post.member.application.exception.DuplicateEmailException;
+import com.example.post.member.application.exception.InvalidCredentialsException;
+import com.example.post.member.application.exception.InvalidRefreshTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Instant;
@@ -39,6 +41,24 @@ public class GlobalExceptionHandler {
 	) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 				.body(errorResponse("DUPLICATE_EMAIL", exception.getMessage(), request));
+	}
+
+	@ExceptionHandler(InvalidCredentialsException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
+			InvalidCredentialsException exception,
+			HttpServletRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(errorResponse("INVALID_CREDENTIALS", exception.getMessage(), request));
+	}
+
+	@ExceptionHandler(InvalidRefreshTokenException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidRefreshTokenException(
+			InvalidRefreshTokenException exception,
+			HttpServletRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(errorResponse("INVALID_REFRESH_TOKEN", exception.getMessage(), request));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)

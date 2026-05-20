@@ -47,4 +47,18 @@ class MemberPersistenceAdapterTest {
 
 		assertTrue(adapter.existsByEmail("minu@example.com"));
 	}
+
+	@Test
+	void findsMemberByEmailAndId() {
+		MemberPersistenceAdapter adapter = new MemberPersistenceAdapter(memberJpaRepository);
+		Member savedMember = adapter.save(Member.create(
+				"minu@example.com",
+				"$2a$10$abcdefghijklmnopqrstuvabcdefghiabcdefghiabcdefghiabcdef",
+				"minu",
+				Instant.parse("2026-05-20T00:00:00Z")
+		));
+
+		assertTrue(adapter.findByEmail("minu@example.com").isPresent());
+		assertTrue(adapter.findById(savedMember.getId()).isPresent());
+	}
 }
