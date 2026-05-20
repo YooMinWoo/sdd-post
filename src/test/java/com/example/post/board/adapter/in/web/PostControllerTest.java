@@ -1,5 +1,6 @@
 package com.example.post.board.adapter.in.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -7,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.ReadPostQuery;
+import com.example.post.board.application.port.in.ReadPostResult;
+import com.example.post.board.application.port.in.ReadPostUseCase;
 import com.example.post.board.exception.BoardErrorCode;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.ErrorCode;
@@ -29,8 +33,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class PostControllerTest {
 
 	private final FakeCreatePostUseCase createPostUseCase = new FakeCreatePostUseCase();
+	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
-			.standaloneSetup(new PostController(createPostUseCase))
+			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 			.setControllerAdvice(new GlobalExceptionHandler(
 					Clock.fixed(Instant.parse("2026-05-20T00:00:00Z"), ZoneOffset.UTC)
@@ -58,11 +63,11 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.code").doesNotExist())
 				.andExpect(jsonPath("$.message").value("게시글이 생성되었습니다."))
 				.andExpect(jsonPath("$.data.id").value(1))
-				.andExpect(jsonPath("$.data.title").value("Hello"))
-				.andExpect(jsonPath("$.data.content").value("First post"))
-				.andExpect(jsonPath("$.data.authorMemberId").value(1))
-				.andExpect(jsonPath("$.data.author").value("minu"))
-				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.data.title").doesNotExist())
+				.andExpect(jsonPath("$.data.content").doesNotExist())
+				.andExpect(jsonPath("$.data.authorMemberId").doesNotExist())
+				.andExpect(jsonPath("$.data.author").doesNotExist())
+				.andExpect(jsonPath("$.data.createdAt").doesNotExist())
 				.andExpect(jsonPath("$.timestamp").exists())
 				.andExpect(jsonPath("$.errors").isArray());
 	}
@@ -142,6 +147,49 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.errors").isArray());
 	}
 
+	@Test
+	void returnsReadPost() throws Exception {
+		mockMvc.perform(get("/posts/{postId}", 1L))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("게시글을 조회했습니다."))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.title").value("Hello"))
+				.andExpect(jsonPath("$.data.content").value("First post"))
+				.andExpect(jsonPath("$.data.authorMemberId").value(2))
+				.andExpect(jsonPath("$.data.author").value("minu"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
+	}
+
+	@Test
+	void returnsNotFoundForMissingPost() throws Exception {
+		readPostUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(get("/posts/{postId}", 999L))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.data").doesNotExist())
+				.andExpect(jsonPath("$.path").value("/posts/999"));
+	}
+
+	@Test
+	void returnsBadRequestForInvalidPostId() throws Exception {
+		readPostUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(get("/posts/{postId}", 0L))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.data").doesNotExist())
+				.andExpect(jsonPath("$.path").value("/posts/0"));
+	}
+
 	private static RequestPostProcessor authenticatedMember() {
 		return request -> {
 			SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -167,11 +215,24 @@ class PostControllerTest {
 			if (throwIllegalArgumentException) {
 				throw new IllegalArgumentException("title is required");
 			}
-			return new CreatePostResult(
-					1L,
-					command.title(),
-					command.content(),
-					command.authorMemberId(),
+			return new CreatePostResult(1L);
+		}
+	}
+
+	private static class FakeReadPostUseCase implements ReadPostUseCase {
+
+		private ErrorCode errorCode;
+
+		@Override
+		public ReadPostResult readPost(ReadPostQuery query) {
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new ReadPostResult(
+					query.postId(),
+					"Hello",
+					"First post",
+					2L,
 					"minu",
 					Instant.parse("2026-05-20T00:00:00Z")
 			);

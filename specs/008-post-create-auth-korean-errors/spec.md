@@ -14,7 +14,8 @@
 - 게시글 작성자는 요청 본문이 아니라 인증된 회원 정보에서 결정한다.
 - accessToken의 `sub` 클레임을 게시글 작성자의 회원 id로 사용한다.
 - 게시글에는 작성자 닉네임이 아니라 `authorMemberId`를 저장한다.
-- 응답에서 작성자 표시가 필요한 경우 저장된 `authorMemberId`로 현재 회원 닉네임을 조회해 제공한다.
+- 생성 응답은 생성된 게시글 id만 반환한다.
+- 작성자 표시가 필요한 경우 상세 조회 API에서 저장된 `authorMemberId`로 현재 회원 닉네임을 조회해 제공한다.
 - 실패 응답은 영문 `code`와 한글 `message`를 함께 제공한다.
 - 인증 토큰 누락, 잘못된 accessToken, 만료된 accessToken은 `401 Unauthorized`로 응답한다.
 - 기존 게시글 제목, 본문 검증 실패도 한글 `message`를 포함한다.
@@ -66,12 +67,7 @@ Content-Type: application/json
   "success": true,
   "message": "게시글이 생성되었습니다.",
   "data": {
-    "id": 1,
-    "title": "안녕하세요",
-    "content": "첫 번째 게시글입니다.",
-    "authorMemberId": 1,
-    "author": "minu",
-    "createdAt": "2026-05-20T00:00:00Z"
+    "id": 1
   },
   "path": null,
   "timestamp": "2026-05-20T00:00:00Z",

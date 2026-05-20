@@ -1,4 +1,4 @@
 package com.example.post.board.application.port.in;
 
-public record CreatePostResult(Long id) {
+public record ReadPostQuery(Long postId) {
 }

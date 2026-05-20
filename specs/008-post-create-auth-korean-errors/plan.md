@@ -14,7 +14,8 @@
 - `CreatePostCommand`는 제목, 본문, 인증 회원 id를 가진다.
 - `Post` 도메인 모델은 `author` 문자열 대신 `authorMemberId`를 가진다.
 - `posts` 테이블은 `author` 문자열 컬럼 대신 `author_member_id` 단순 컬럼을 가진다. DB 마이그레이션 정책이 아직 없으므로 FK 제약은 후속 명세에서 다룬다.
-- 생성 성공 응답에 작성자 표시가 필요하면 `authorMemberId`로 회원 정보를 조회해 현재 닉네임을 조합한다.
+- 생성 성공 응답은 생성된 게시글 id만 반환한다.
+- 작성자 현재 닉네임 조합은 상세 조회 기능에서 처리한다.
 - 전역 예외 처리는 `ErrorCode.code()`를 실패 응답 `code`로, `ErrorCode.description()`을 실패 응답 `message`로 사용한다.
 - 인증 실패 에러 코드는 회원/인증 컨텍스트의 `MemberErrorCode`에 둔다.
 
@@ -51,6 +52,7 @@
 - 잘못된 accessToken, 만료된 accessToken, refreshToken 사용 시 `401`과 `code=INVALID_ACCESS_TOKEN`을 검증한다.
 - 유효한 accessToken으로 호출하면 `201 Created`와 토큰 `sub` 기반 `authorMemberId` 저장을 검증한다.
 - 요청 본문에 `author`나 닉네임이 포함되어도 저장 작성자 id를 바꾸지 않는지 검증한다.
-- 회원 닉네임 변경 후 조회 기능이 생기면 저장된 `authorMemberId`로 최신 닉네임을 반환하는지 검증한다.
+- 생성 응답은 `data.id`만 포함하고 제목, 본문, 작성자 회원 id, 작성자 닉네임, 생성 시각을 포함하지 않는지 검증한다.
+- 상세 조회 기능이 생기면 저장된 `authorMemberId`로 최신 닉네임을 반환하는지 검증한다.
 - 도메인 모델 생성은 정적 팩터리만 사용하고, 필수 값 누락 시 명시적 에러 코드가 발생하는지 검증한다.
 - 전역 예외 처리 테스트에서 대표 예외가 영문 `code`와 한글 `message`를 함께 반환하는지 검증한다.

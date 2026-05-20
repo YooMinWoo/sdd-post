@@ -18,7 +18,7 @@
 - [x] `POST /posts` 인증 필수 설정 적용
 - [x] 게시글 작성자가 인증 회원 id에서 결정되도록 Web 어댑터와 command 갱신
 - [x] `Post` 도메인 모델과 `PostJpaEntity`를 `authorMemberId` 기반으로 전환
-- [x] 생성 응답에서 작성자 표시가 필요하면 회원 현재 닉네임을 조회해 조합
+- [x] 생성 응답을 게시글 id만 반환하도록 최소화
 - [x] Swagger 문서와 요청/응답 예시 갱신
 - [x] 인증 성공/실패 및 한글 에러 응답 테스트 추가
 - [x] `.\gradlew.bat test` 실행
