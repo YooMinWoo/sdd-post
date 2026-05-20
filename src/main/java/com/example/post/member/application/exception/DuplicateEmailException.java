@@ -1,8 +1,11 @@
 package com.example.post.member.application.exception;
 
-public class DuplicateEmailException extends RuntimeException {
+import com.example.post.global.exception.BusinessException;
+import com.example.post.member.exception.MemberErrorCode;
+
+public class DuplicateEmailException extends BusinessException {
 
 	public DuplicateEmailException() {
-		super("이미 가입된 이메일입니다.");
+		super(MemberErrorCode.DUPLICATE_EMAIL);
 	}
 }

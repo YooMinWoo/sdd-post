@@ -1,5 +1,9 @@
 package com.example.post.board.domain.model;
 
+import com.example.post.board.exception.BoardErrorCode;
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.ErrorCode;
+import com.example.post.global.exception.GlobalErrorCode;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -33,24 +37,38 @@ public class Post {
 
 	public static Post rehydrate(Long id, String title, String content, String author, Instant createdAt) {
 		if (id == null) {
-			throw new IllegalArgumentException("id must not be null");
+			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
 		}
 		return new Post(id, title, content, author, createdAt);
 	}
 
 	private static String validateRequired(String fieldName, String value, int maxLength) {
 		if (value == null) {
-			throw new IllegalArgumentException(fieldName + " is required");
+			throw new BusinessException(requiredErrorCode(fieldName));
 		}
 
 		String normalized = value.trim();
 		if (normalized.isBlank()) {
-			throw new IllegalArgumentException(fieldName + " is required");
+			throw new BusinessException(requiredErrorCode(fieldName));
 		}
 		if (normalized.length() > maxLength) {
-			throw new IllegalArgumentException(fieldName + " must be at most " + maxLength + " characters");
+			throw new BusinessException(tooLongErrorCode(fieldName));
 		}
 		return normalized;
+	}
+
+	private static ErrorCode requiredErrorCode(String fieldName) {
+		if ("title".equals(fieldName)) {
+			return BoardErrorCode.POST_TITLE_REQUIRED;
+		}
+		return GlobalErrorCode.INVALID_REQUEST;
+	}
+
+	private static ErrorCode tooLongErrorCode(String fieldName) {
+		if ("title".equals(fieldName)) {
+			return BoardErrorCode.POST_TITLE_TOO_LONG;
+		}
+		return GlobalErrorCode.INVALID_REQUEST;
 	}
 
 	public Long getId() {

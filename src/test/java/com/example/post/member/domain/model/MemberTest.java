@@ -3,6 +3,9 @@ package com.example.post.member.domain.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.GlobalErrorCode;
+import com.example.post.member.exception.MemberErrorCode;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -24,43 +27,44 @@ class MemberTest {
 
 	@Test
 	void rejectsBlankEmail() {
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		BusinessException exception = assertThrows(
+				BusinessException.class,
 				() -> Member.create("", "passwordHash", "minu")
 		);
 
-		assertEquals("email is required", exception.getMessage());
+		assertEquals(MemberErrorCode.INVALID_EMAIL, exception.errorCode());
+		assertEquals("이메일 형식이 올바르지 않습니다.", exception.errorCode().description());
 	}
 
 	@Test
 	void rejectsInvalidEmail() {
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		BusinessException exception = assertThrows(
+				BusinessException.class,
 				() -> Member.create("invalid-email", "passwordHash", "minu")
 		);
 
-		assertEquals("email must be valid", exception.getMessage());
+		assertEquals(MemberErrorCode.INVALID_EMAIL, exception.errorCode());
 	}
 
 	@Test
 	void rejectsBlankPasswordHash() {
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		BusinessException exception = assertThrows(
+				BusinessException.class,
 				() -> Member.create("minu@example.com", " ", "minu")
 		);
 
-		assertEquals("passwordHash is required", exception.getMessage());
+		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}
 
 	@Test
 	void rejectsTooLongNickname() {
 		String nickname = "a".repeat(51);
 
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		BusinessException exception = assertThrows(
+				BusinessException.class,
 				() -> Member.create("minu@example.com", "passwordHash", nickname)
 		);
 
-		assertEquals("nickname must be at most 50 characters", exception.getMessage());
+		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}
 }

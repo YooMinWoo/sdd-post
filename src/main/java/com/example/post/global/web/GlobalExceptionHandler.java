@@ -1,8 +1,7 @@
 package com.example.post.global.web;
 
-import com.example.post.member.application.exception.DuplicateEmailException;
-import com.example.post.member.application.exception.InvalidCredentialsException;
-import com.example.post.member.application.exception.InvalidRefreshTokenException;
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Instant;
@@ -25,6 +24,16 @@ public class GlobalExceptionHandler {
 		this.clock = clock;
 	}
 
+	@ExceptionHandler(BusinessException.class)
+	public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+			BusinessException exception,
+			HttpServletRequest request
+	) {
+		ErrorCode errorCode = exception.errorCode();
+		return ResponseEntity.status(httpStatus(errorCode))
+				.body(errorResponse(errorCode.code(), request));
+	}
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
 			IllegalArgumentException exception,
@@ -32,33 +41,6 @@ public class GlobalExceptionHandler {
 	) {
 		return ResponseEntity.badRequest()
 				.body(errorResponse("INVALID_REQUEST", request));
-	}
-
-	@ExceptionHandler(DuplicateEmailException.class)
-	public ResponseEntity<ApiResponse<Void>> handleDuplicateEmailException(
-			DuplicateEmailException exception,
-			HttpServletRequest request
-	) {
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(errorResponse("DUPLICATE_EMAIL", request));
-	}
-
-	@ExceptionHandler(InvalidCredentialsException.class)
-	public ResponseEntity<ApiResponse<Void>> handleInvalidCredentialsException(
-			InvalidCredentialsException exception,
-			HttpServletRequest request
-	) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body(errorResponse("INVALID_CREDENTIALS", request));
-	}
-
-	@ExceptionHandler(InvalidRefreshTokenException.class)
-	public ResponseEntity<ApiResponse<Void>> handleInvalidRefreshTokenException(
-			InvalidRefreshTokenException exception,
-			HttpServletRequest request
-	) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-				.body(errorResponse("INVALID_REFRESH_TOKEN", request));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
@@ -75,5 +57,15 @@ public class GlobalExceptionHandler {
 
 	private ApiResponse<Void> errorResponse(String message, HttpServletRequest request) {
 		return ApiResponse.error(message, request.getRequestURI(), Instant.now(clock));
+	}
+
+	private static HttpStatus httpStatus(ErrorCode errorCode) {
+		return switch (errorCode.code()) {
+			case "DUPLICATE_EMAIL" -> HttpStatus.CONFLICT;
+			case "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN" -> HttpStatus.UNAUTHORIZED;
+			case "INVALID_REQUEST", "POST_TITLE_REQUIRED", "POST_TITLE_TOO_LONG", "INVALID_EMAIL",
+					"PASSWORD_REQUIRED", "PASSWORD_TOO_SHORT" -> HttpStatus.BAD_REQUEST;
+			default -> HttpStatus.INTERNAL_SERVER_ERROR;
+		};
 	}
 }

@@ -1,8 +1,11 @@
 package com.example.post.member.application.exception;
 
-public class InvalidCredentialsException extends RuntimeException {
+import com.example.post.global.exception.BusinessException;
+import com.example.post.member.exception.MemberErrorCode;
+
+public class InvalidCredentialsException extends BusinessException {
 
 	public InvalidCredentialsException() {
-		super("이메일 또는 비밀번호가 올바르지 않습니다.");
+		super(MemberErrorCode.INVALID_CREDENTIALS);
 	}
 }

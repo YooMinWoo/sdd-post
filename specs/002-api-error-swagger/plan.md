@@ -8,7 +8,7 @@
 
 - `GlobalExceptionHandler`를 추가해 컨트롤러별 예외 처리를 제거한다.
 - `ErrorResponse`를 구조화된 공통 응답 DTO로 확장한다.
-- `IllegalArgumentException`, `HttpMessageNotReadableException`, 기타 `Exception`을 각각 명확한 HTTP 상태와 에러 코드로 변환한다.
+- `IllegalArgumentException`, `HttpMessageNotReadableException`, 기타 `Exception`을 각각 명확한 HTTP 상태와 에러 코드로 변환한다. 단, 신규 예외 정책에서는 `IllegalArgumentException`을 fallback으로 축소하고 명시적 커스텀 예외를 우선한다.
 
 ## Swagger
 

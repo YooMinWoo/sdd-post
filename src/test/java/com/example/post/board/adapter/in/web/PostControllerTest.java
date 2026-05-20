@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.exception.BoardErrorCode;
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.ErrorCode;
 import com.example.post.global.web.GlobalExceptionHandler;
 import java.time.Clock;
 import java.time.Instant;
@@ -52,7 +55,7 @@ class PostControllerTest {
 
 	@Test
 	void returnsBadRequestForInvalidInput() throws Exception {
-		createPostUseCase.throwIllegalArgumentException = true;
+		createPostUseCase.errorCode = BoardErrorCode.POST_TITLE_REQUIRED;
 
 		mockMvc.perform(post("/posts")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -66,11 +69,30 @@ class PostControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("POST_TITLE_REQUIRED"))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());
+	}
+
+	@Test
+	void returnsBadRequestForIllegalArgumentFallback() throws Exception {
+		createPostUseCase.throwIllegalArgumentException = true;
+
+		mockMvc.perform(post("/posts")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "",
+								  "content": "First post",
+								  "author": "minu"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.message").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.path").value("/posts"));
 	}
 
 	@Test
@@ -91,9 +113,13 @@ class PostControllerTest {
 	private static class FakeCreatePostUseCase implements CreatePostUseCase {
 
 		private boolean throwIllegalArgumentException;
+		private ErrorCode errorCode;
 
 		@Override
 		public CreatePostResult createPost(CreatePostCommand command) {
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
 			if (throwIllegalArgumentException) {
 				throw new IllegalArgumentException("title is required");
 			}

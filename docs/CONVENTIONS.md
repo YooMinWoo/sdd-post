@@ -61,6 +61,8 @@ PostPersistenceAdapter
 - 단순 데이터 운반만 하는 도메인 객체는 피한다.
 - 외부 입력 검증과 도메인 불변식 검증을 구분한다.
 - 도메인 예외는 의미 있는 이름이나 안정적인 메시지로 표현한다.
+- 신규 도메인/애플리케이션 검증 실패는 `IllegalArgumentException`으로 뭉뚱그리지 않고 의미 있는 예외 또는 안정적인 에러 코드로 표현한다.
+- 에러 코드는 bounded context별 enum으로 분리하고, 각 enum 값은 코드 문자열과 설명을 함께 제공한다.
 
 ## 애플리케이션 규칙
 
@@ -81,6 +83,7 @@ PostPersistenceAdapter
 
 - 성공과 실패 응답은 공통 `ApiResponse<T>` 구조를 기본으로 사용한다.
 - 성공 응답의 `message`는 한글 메시지를 사용하고, 실패 응답의 `message`는 안정적인 에러 코드를 사용한다.
+- 전역 예외 처리는 커스텀 예외를 우선 처리하고, `IllegalArgumentException`은 기존 호환 또는 fallback 용도로만 사용한다.
 - 본문이 없는 `204 No Content` 응답은 공통 응답 본문을 강제하지 않는다.
 - 컨트롤러 Swagger 문서는 `global.web.swagger`의 API별 문서 어노테이션을 우선 사용한다.
 - 컨트롤러에는 태그와 API별 문서 어노테이션만 직접 작성한다.

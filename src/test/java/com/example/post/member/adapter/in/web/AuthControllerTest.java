@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.ErrorCode;
 import com.example.post.member.application.exception.DuplicateEmailException;
 import com.example.post.member.application.exception.InvalidCredentialsException;
 import com.example.post.member.application.exception.InvalidRefreshTokenException;
@@ -17,6 +19,7 @@ import com.example.post.member.application.port.in.SignupCommand;
 import com.example.post.member.application.port.in.SignupResult;
 import com.example.post.member.application.port.in.SignupUseCase;
 import com.example.post.member.application.port.in.TokenResult;
+import com.example.post.member.exception.MemberErrorCode;
 import com.example.post.global.web.GlobalExceptionHandler;
 import java.time.Clock;
 import java.time.Instant;
@@ -65,7 +68,7 @@ class AuthControllerTest {
 
 	@Test
 	void returnsBadRequestForInvalidInput() throws Exception {
-		signupUseCase.throwIllegalArgumentException = true;
+		signupUseCase.errorCode = MemberErrorCode.INVALID_EMAIL;
 
 		mockMvc.perform(post("/auth/signup")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -79,7 +82,7 @@ class AuthControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("INVALID_EMAIL"))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/signup"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
@@ -207,9 +210,13 @@ class AuthControllerTest {
 
 		private boolean throwIllegalArgumentException;
 		private boolean throwDuplicateEmailException;
+		private ErrorCode errorCode;
 
 		@Override
 		public SignupResult signup(SignupCommand command) {
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
 			if (throwIllegalArgumentException) {
 				throw new IllegalArgumentException("email must be valid");
 			}

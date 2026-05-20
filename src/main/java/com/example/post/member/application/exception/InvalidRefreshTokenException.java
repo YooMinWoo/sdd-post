@@ -1,8 +1,11 @@
 package com.example.post.member.application.exception;
 
-public class InvalidRefreshTokenException extends RuntimeException {
+import com.example.post.global.exception.BusinessException;
+import com.example.post.member.exception.MemberErrorCode;
+
+public class InvalidRefreshTokenException extends BusinessException {
 
 	public InvalidRefreshTokenException() {
-		super("유효하지 않은 refreshToken입니다.");
+		super(MemberErrorCode.INVALID_REFRESH_TOKEN);
 	}
 }

@@ -1,5 +1,6 @@
 package com.example.post.member.application.service;
 
+import com.example.post.global.exception.BusinessException;
 import com.example.post.member.application.exception.DuplicateEmailException;
 import com.example.post.member.application.port.in.SignupCommand;
 import com.example.post.member.application.port.in.SignupResult;
@@ -7,6 +8,7 @@ import com.example.post.member.application.port.in.SignupUseCase;
 import com.example.post.member.application.port.out.MemberRepositoryPort;
 import com.example.post.member.application.port.out.PasswordEncoderPort;
 import com.example.post.member.domain.model.Member;
+import com.example.post.member.exception.MemberErrorCode;
 import java.time.Instant;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
@@ -47,18 +49,18 @@ public class SignupService implements SignupUseCase {
 	}
 
 	private static String normalizeEmail(String email) {
-		if (email == null) {
-			throw new IllegalArgumentException("email is required");
+		if (email == null || email.isBlank()) {
+			throw new BusinessException(MemberErrorCode.INVALID_EMAIL);
 		}
 		return email.trim().toLowerCase(Locale.ROOT);
 	}
 
 	private static void validatePassword(String password) {
 		if (password == null || password.isBlank()) {
-			throw new IllegalArgumentException("password is required");
+			throw new BusinessException(MemberErrorCode.PASSWORD_REQUIRED);
 		}
 		if (password.length() < MIN_PASSWORD_LENGTH) {
-			throw new IllegalArgumentException("password must be at least 8 characters");
+			throw new BusinessException(MemberErrorCode.PASSWORD_TOO_SHORT);
 		}
 	}
 }

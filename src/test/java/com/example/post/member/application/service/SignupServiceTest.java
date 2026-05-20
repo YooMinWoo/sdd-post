@@ -4,12 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.example.post.global.exception.BusinessException;
 import com.example.post.member.application.exception.DuplicateEmailException;
 import com.example.post.member.application.port.in.SignupCommand;
 import com.example.post.member.application.port.in.SignupResult;
 import com.example.post.member.application.port.out.MemberRepositoryPort;
 import com.example.post.member.application.port.out.PasswordEncoderPort;
 import com.example.post.member.domain.model.Member;
+import com.example.post.member.exception.MemberErrorCode;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,22 +42,44 @@ class SignupServiceTest {
 	void rejectsDuplicateEmail() {
 		memberRepositoryPort.existingEmails.put("minu@example.com", true);
 
-		assertThrows(
+		DuplicateEmailException exception = assertThrows(
 				DuplicateEmailException.class,
 				() -> signupService.signup(new SignupCommand("MINU@example.com", "password123", "minu"))
 		);
 
+		assertEquals(MemberErrorCode.DUPLICATE_EMAIL, exception.errorCode());
+		assertEquals("이미 가입된 이메일입니다.", exception.errorCode().description());
 		assertEquals(0, memberRepositoryPort.saveCount);
 	}
 
 	@Test
 	void rejectsShortPassword() {
-		IllegalArgumentException exception = assertThrows(
-				IllegalArgumentException.class,
+		BusinessException exception = assertThrows(
+				BusinessException.class,
 				() -> signupService.signup(new SignupCommand("minu@example.com", "short", "minu"))
 		);
 
-		assertEquals("password must be at least 8 characters", exception.getMessage());
+		assertEquals(MemberErrorCode.PASSWORD_TOO_SHORT, exception.errorCode());
+	}
+
+	@Test
+	void rejectsBlankPassword() {
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> signupService.signup(new SignupCommand("minu@example.com", " ", "minu"))
+		);
+
+		assertEquals(MemberErrorCode.PASSWORD_REQUIRED, exception.errorCode());
+	}
+
+	@Test
+	void rejectsBlankEmail() {
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> signupService.signup(new SignupCommand(" ", "password123", "minu"))
+		);
+
+		assertEquals(MemberErrorCode.INVALID_EMAIL, exception.errorCode());
 	}
 
 	private static class FakeMemberRepositoryPort implements MemberRepositoryPort {

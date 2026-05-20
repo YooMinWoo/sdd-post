@@ -1,5 +1,9 @@
 package com.example.post.member.domain.model;
 
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.ErrorCode;
+import com.example.post.global.exception.GlobalErrorCode;
+import com.example.post.member.exception.MemberErrorCode;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
@@ -35,30 +39,34 @@ public class Member {
 
 	public static Member rehydrate(Long id, String email, String passwordHash, String nickname, Instant createdAt) {
 		if (id == null) {
-			throw new IllegalArgumentException("id must not be null");
+			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
 		}
 		return new Member(id, email, passwordHash, nickname, createdAt);
 	}
 
 	private static String validateEmail(String email) {
-		String normalized = validateRequired("email", email, MAX_EMAIL_LENGTH).toLowerCase(Locale.ROOT);
+		String normalized = validateRequired("email", email, MAX_EMAIL_LENGTH, MemberErrorCode.INVALID_EMAIL).toLowerCase(Locale.ROOT);
 		if (!EMAIL_PATTERN.matcher(normalized).matches()) {
-			throw new IllegalArgumentException("email must be valid");
+			throw new BusinessException(MemberErrorCode.INVALID_EMAIL);
 		}
 		return normalized;
 	}
 
 	private static String validateRequired(String fieldName, String value, int maxLength) {
+		return validateRequired(fieldName, value, maxLength, GlobalErrorCode.INVALID_REQUEST);
+	}
+
+	private static String validateRequired(String fieldName, String value, int maxLength, ErrorCode errorCode) {
 		if (value == null) {
-			throw new IllegalArgumentException(fieldName + " is required");
+			throw new BusinessException(errorCode);
 		}
 
 		String normalized = value.trim();
 		if (normalized.isBlank()) {
-			throw new IllegalArgumentException(fieldName + " is required");
+			throw new BusinessException(errorCode);
 		}
 		if (normalized.length() > maxLength) {
-			throw new IllegalArgumentException(fieldName + " must be at most " + maxLength + " characters");
+			throw new BusinessException(errorCode);
 		}
 		return normalized;
 	}

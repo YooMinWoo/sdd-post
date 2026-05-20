@@ -9,7 +9,7 @@ DDD와 헥사고날 아키텍처에 맞춰 회원가입 기능을 구현한다. 
 - `Member`는 회원가입의 애그리거트 루트다.
 - `Member.create(email, passwordHash, nickname)`은 이메일과 닉네임을 정규화하고 검증한다.
 - 회원은 id, email, passwordHash, nickname, createdAt을 가진다.
-- 도메인 검증 실패는 `IllegalArgumentException`으로 표현한다.
+- 도메인 검증 실패는 기존 구현 기준으로 `IllegalArgumentException`을 사용했다. 향후 예외 정책은 `007-global-exception-policy`를 따른다.
 
 ## 애플리케이션
 
