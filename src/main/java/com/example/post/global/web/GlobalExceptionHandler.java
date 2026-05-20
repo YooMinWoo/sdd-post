@@ -2,6 +2,7 @@ package com.example.post.global.web;
 
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.ErrorCode;
+import com.example.post.global.exception.GlobalErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Clock;
 import java.time.Instant;
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
 	) {
 		ErrorCode errorCode = exception.errorCode();
 		return ResponseEntity.status(httpStatus(errorCode))
-				.body(errorResponse(errorCode.code(), request));
+				.body(errorResponse(errorCode, request));
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
@@ -40,29 +41,30 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return ResponseEntity.badRequest()
-				.body(errorResponse("INVALID_REQUEST", request));
+				.body(errorResponse(GlobalErrorCode.INVALID_REQUEST, request));
 	}
 
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpServletRequest request) {
 		return ResponseEntity.badRequest()
-				.body(errorResponse("MALFORMED_JSON", request));
+				.body(errorResponse(GlobalErrorCode.MALFORMED_JSON, request));
 	}
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ApiResponse<Void>> handleException(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(errorResponse("INTERNAL_SERVER_ERROR", request));
+				.body(errorResponse(GlobalErrorCode.INTERNAL_SERVER_ERROR, request));
 	}
 
-	private ApiResponse<Void> errorResponse(String message, HttpServletRequest request) {
-		return ApiResponse.error(message, request.getRequestURI(), Instant.now(clock));
+	private ApiResponse<Void> errorResponse(ErrorCode errorCode, HttpServletRequest request) {
+		return ApiResponse.error(errorCode.code(), errorCode.description(), request.getRequestURI(), Instant.now(clock));
 	}
 
 	private static HttpStatus httpStatus(ErrorCode errorCode) {
 		return switch (errorCode.code()) {
 			case "DUPLICATE_EMAIL" -> HttpStatus.CONFLICT;
-			case "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN" -> HttpStatus.UNAUTHORIZED;
+			case "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "UNAUTHORIZED", "INVALID_ACCESS_TOKEN" ->
+					HttpStatus.UNAUTHORIZED;
 			case "INVALID_REQUEST", "POST_TITLE_REQUIRED", "POST_TITLE_TOO_LONG", "INVALID_EMAIL",
 					"PASSWORD_REQUIRED", "PASSWORD_TOO_SHORT" -> HttpStatus.BAD_REQUEST;
 			default -> HttpStatus.INTERNAL_SERVER_ERROR;

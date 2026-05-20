@@ -23,8 +23,8 @@ class PostJpaEntity {
 	@Column(nullable = false, length = 5_000)
 	private String content;
 
-	@Column(nullable = false, length = 50)
-	private String author;
+	@Column(nullable = false)
+	private Long authorMemberId;
 
 	@Column(nullable = false)
 	private Instant createdAt;
@@ -32,11 +32,11 @@ class PostJpaEntity {
 	protected PostJpaEntity() {
 	}
 
-	private PostJpaEntity(Long id, String title, String content, String author, Instant createdAt) {
+	private PostJpaEntity(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
 		this.id = id;
 		this.title = title;
 		this.content = content;
-		this.author = author;
+		this.authorMemberId = authorMemberId;
 		this.createdAt = createdAt;
 	}
 
@@ -45,12 +45,12 @@ class PostJpaEntity {
 				post.getId(),
 				post.getTitle(),
 				post.getContent(),
-				post.getAuthor(),
+				post.getAuthorMemberId(),
 				post.getCreatedAt()
 		);
 	}
 
 	Post toDomain() {
-		return Post.rehydrate(id, title, content, author, createdAt);
+		return Post.rehydrate(id, title, content, authorMemberId, createdAt);
 	}
 }

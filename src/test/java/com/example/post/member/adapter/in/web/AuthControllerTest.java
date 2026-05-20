@@ -81,8 +81,8 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("INVALID_EMAIL"))
+				.andExpect(jsonPath("$.code").value("INVALID_EMAIL"))
+				.andExpect(jsonPath("$.message").value("이메일 형식이 올바르지 않습니다."))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/signup"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
@@ -125,8 +125,8 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("INVALID_CREDENTIALS"))
+				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"))
+				.andExpect(jsonPath("$.message").value("이메일 또는 비밀번호가 올바르지 않습니다."))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/login"));
 	}
@@ -165,8 +165,8 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("INVALID_REFRESH_TOKEN"))
+				.andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"))
+				.andExpect(jsonPath("$.message").value("유효하지 않은 refreshToken입니다."))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/refresh"));
 	}
@@ -198,8 +198,8 @@ class AuthControllerTest {
 								"""))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").doesNotExist())
-				.andExpect(jsonPath("$.message").value("DUPLICATE_EMAIL"))
+				.andExpect(jsonPath("$.code").value("DUPLICATE_EMAIL"))
+				.andExpect(jsonPath("$.message").value("이미 가입된 이메일입니다."))
 				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/auth/signup"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))

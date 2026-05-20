@@ -18,14 +18,14 @@ class PostPersistenceAdapterTest {
 	@Test
 	void savesPost() {
 		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
-		Post post = Post.create("title", "content", "author", Instant.parse("2026-05-20T00:00:00Z"));
+		Post post = Post.create("title", "content", 1L, Instant.parse("2026-05-20T00:00:00Z"));
 
 		Post savedPost = adapter.save(post);
 
 		assertNotNull(savedPost.getId());
 		assertEquals("title", savedPost.getTitle());
 		assertEquals("content", savedPost.getContent());
-		assertEquals("author", savedPost.getAuthor());
+		assertEquals(1L, savedPost.getAuthorMemberId());
 		assertEquals(Instant.parse("2026-05-20T00:00:00Z"), savedPost.getCreatedAt());
 	}
 }

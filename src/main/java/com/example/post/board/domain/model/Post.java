@@ -11,35 +11,34 @@ public class Post {
 
 	private static final int MAX_TITLE_LENGTH = 100;
 	private static final int MAX_CONTENT_LENGTH = 5_000;
-	private static final int MAX_AUTHOR_LENGTH = 50;
 
 	private final Long id;
 	private final String title;
 	private final String content;
-	private final String author;
+	private final Long authorMemberId;
 	private final Instant createdAt;
 
-	private Post(Long id, String title, String content, String author, Instant createdAt) {
+	private Post(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
 		this.id = id;
 		this.title = validateRequired("title", title, MAX_TITLE_LENGTH);
 		this.content = validateRequired("content", content, MAX_CONTENT_LENGTH);
-		this.author = validateRequired("author", author, MAX_AUTHOR_LENGTH);
+		this.authorMemberId = validateAuthorMemberId(authorMemberId);
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
 	}
 
-	public static Post create(String title, String content, String author) {
-		return create(title, content, author, Instant.now());
+	public static Post create(String title, String content, Long authorMemberId) {
+		return create(title, content, authorMemberId, Instant.now());
 	}
 
-	public static Post create(String title, String content, String author, Instant createdAt) {
-		return new Post(null, title, content, author, createdAt);
+	public static Post create(String title, String content, Long authorMemberId, Instant createdAt) {
+		return new Post(null, title, content, authorMemberId, createdAt);
 	}
 
-	public static Post rehydrate(Long id, String title, String content, String author, Instant createdAt) {
+	public static Post rehydrate(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
 		if (id == null) {
 			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
 		}
-		return new Post(id, title, content, author, createdAt);
+		return new Post(id, title, content, authorMemberId, createdAt);
 	}
 
 	private static String validateRequired(String fieldName, String value, int maxLength) {
@@ -55,6 +54,13 @@ public class Post {
 			throw new BusinessException(tooLongErrorCode(fieldName));
 		}
 		return normalized;
+	}
+
+	private static Long validateAuthorMemberId(Long authorMemberId) {
+		if (authorMemberId == null || authorMemberId <= 0) {
+			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
+		}
+		return authorMemberId;
 	}
 
 	private static ErrorCode requiredErrorCode(String fieldName) {
@@ -83,8 +89,8 @@ public class Post {
 		return content;
 	}
 
-	public String getAuthor() {
-		return author;
+	public Long getAuthorMemberId() {
+		return authorMemberId;
 	}
 
 	public Instant getCreatedAt() {

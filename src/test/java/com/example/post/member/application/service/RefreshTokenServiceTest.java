@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.example.post.member.application.exception.InvalidRefreshTokenException;
 import com.example.post.member.application.port.in.RefreshTokenCommand;
 import com.example.post.member.application.port.in.TokenResult;
+import com.example.post.member.application.port.out.AccessTokenMemberClaims;
 import com.example.post.member.application.port.out.MemberRepositoryPort;
 import com.example.post.member.application.port.out.RefreshTokenStorePort;
 import com.example.post.member.application.port.out.TokenProviderPort;
@@ -90,6 +91,11 @@ class RefreshTokenServiceTest {
 		@Override
 		public TokenResult issue(Member member) {
 			return new TokenResult("Bearer", "new-access-token", "new-refresh-token", 900);
+		}
+
+		@Override
+		public AccessTokenMemberClaims extractAccessTokenMember(String accessToken) {
+			return new AccessTokenMemberClaims(1L, "minu@example.com", "minu");
 		}
 
 		@Override

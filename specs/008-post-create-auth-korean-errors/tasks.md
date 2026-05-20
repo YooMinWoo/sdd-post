@@ -1,0 +1,24 @@
+# 008 게시글 작성 인증과 한글 에러 응답 작업
+
+- [x] SDD 명세 작성
+- [x] 구현 계획 작성
+- [x] 인수 조건 작성
+- [x] 공통 컨벤션 갱신
+- [x] 전역 예외 정책 문서 갱신
+- [x] 도메인 용어집 갱신
+- [x] 문서 색인 갱신
+- [x] 작성자 저장 기준을 닉네임에서 회원 id로 변경 문서화
+- [x] Lombok 제한 사용 정책 문서화
+- [x] `ApiResponse` 실패 응답에 `code` 필드 추가
+- [x] 전역 예외 핸들러가 `ErrorCode.description()`을 한글 `message`로 사용하도록 변경
+- [x] accessToken 검증 포트와 JWT 어댑터 기능 추가
+- [x] Spring Security 인증 필터 추가
+- [x] accessToken claims DTO와 Security principal 분리
+- [x] `@AuthenticationPrincipal` 기반 컨트롤러 인증 회원 주입 적용
+- [x] `POST /posts` 인증 필수 설정 적용
+- [x] 게시글 작성자가 인증 회원 id에서 결정되도록 Web 어댑터와 command 갱신
+- [x] `Post` 도메인 모델과 `PostJpaEntity`를 `authorMemberId` 기반으로 전환
+- [x] 생성 응답에서 작성자 표시가 필요하면 회원 현재 닉네임을 조회해 조합
+- [x] Swagger 문서와 요청/응답 예시 갱신
+- [x] 인증 성공/실패 및 한글 에러 응답 테스트 추가
+- [x] `.\gradlew.bat test` 실행

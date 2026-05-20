@@ -16,18 +16,18 @@ class PostTest {
 	void createsPostWithNormalizedValues() {
 		Instant createdAt = Instant.parse("2026-05-20T00:00:00Z");
 
-		Post post = Post.create(" title ", " content ", " author ", createdAt);
+		Post post = Post.create(" title ", " content ", 1L, createdAt);
 
 		assertEquals("title", post.getTitle());
 		assertEquals("content", post.getContent());
-		assertEquals("author", post.getAuthor());
+		assertEquals(1L, post.getAuthorMemberId());
 		assertEquals(createdAt, post.getCreatedAt());
 		assertNotNull(post.getCreatedAt());
 	}
 
 	@Test
 	void rejectsBlankTitle() {
-		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create(" ", "content", "author"));
+		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create(" ", "content", 1L));
 
 		assertEquals(BoardErrorCode.POST_TITLE_REQUIRED, exception.errorCode());
 		assertEquals("게시글 제목은 필수입니다.", exception.errorCode().description());
@@ -37,7 +37,7 @@ class PostTest {
 	void rejectsTooLongTitle() {
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> Post.create("a".repeat(101), "content", "author")
+				() -> Post.create("a".repeat(101), "content", 1L)
 		);
 
 		assertEquals(BoardErrorCode.POST_TITLE_TOO_LONG, exception.errorCode());
@@ -46,7 +46,7 @@ class PostTest {
 
 	@Test
 	void rejectsBlankContent() {
-		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create("title", " ", "author"));
+		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create("title", " ", 1L));
 
 		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}
@@ -55,25 +55,22 @@ class PostTest {
 	void rejectsTooLongContent() {
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> Post.create("title", "a".repeat(5_001), "author")
+				() -> Post.create("title", "a".repeat(5_001), 1L)
 		);
 
 		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}
 
 	@Test
-	void rejectsBlankAuthor() {
-		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create("title", "content", " "));
+	void rejectsNullAuthorMemberId() {
+		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create("title", "content", null));
 
 		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}
 
 	@Test
-	void rejectsTooLongAuthor() {
-		BusinessException exception = assertThrows(
-				BusinessException.class,
-				() -> Post.create("title", "content", "a".repeat(51))
-		);
+	void rejectsNonPositiveAuthorMemberId() {
+		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create("title", "content", 0L));
 
 		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
 	}

@@ -10,11 +10,14 @@
 | 제목 | Title | 게시글을 요약하는 짧은 문구 |
 | 본문 | Content | 게시글의 주요 내용 |
 | 작성자 | Author | 게시글을 작성한 사용자 또는 주체 |
+| 작성자 회원 id | Author Member ID | 게시글 작성자를 식별하기 위해 저장하는 회원 식별자 |
 | 회원 | Member | 서비스를 이용하기 위해 가입한 사용자 계정 |
 | 이메일 | Email | 회원을 식별하고 로그인에 사용할 수 있는 주소 |
 | 비밀번호 | Password | 회원 본인 확인에 사용하는 비밀 값이며 원문으로 저장하지 않는다 |
 | 닉네임 | Nickname | 게시판에서 회원을 표시할 때 사용하는 이름 |
 | 로그인 | Login | 회원이 이메일과 비밀번호로 본인 계정을 인증하는 행위 |
+| 인증 회원 | Authenticated Member | 유효한 accessToken으로 식별된 로그인 회원 |
+| 인증 필요 API | Authenticated API | 유효한 accessToken이 있어야 호출할 수 있는 API |
 | accessToken | Access Token | 인증이 필요한 API 호출에 사용하는 짧은 만료 시간의 토큰 |
 | refreshToken | Refresh Token | accessToken 재발급에 사용하는 긴 만료 시간의 토큰 |
 | 토큰 재발급 | Token Refresh | 유효한 refreshToken으로 새로운 accessToken과 refreshToken을 발급받는 행위 |

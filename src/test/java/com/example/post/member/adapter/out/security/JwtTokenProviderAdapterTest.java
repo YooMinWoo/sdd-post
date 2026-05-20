@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.example.post.global.config.JwtProperties;
 import com.example.post.member.application.exception.InvalidRefreshTokenException;
 import com.example.post.member.application.port.in.TokenResult;
+import com.example.post.member.application.port.out.AccessTokenMemberClaims;
 import com.example.post.member.domain.model.Member;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -52,12 +53,33 @@ class JwtTokenProviderAdapterTest {
 	}
 
 	@Test
+	void extractsAccessTokenMember() {
+		TokenResult result = adapter.issue(member());
+
+		AccessTokenMemberClaims claims = adapter.extractAccessTokenMember(result.accessToken());
+
+		assertEquals(1L, claims.memberId());
+		assertEquals("minu@example.com", claims.email());
+		assertEquals("minu", claims.nickname());
+	}
+
+	@Test
 	void rejectsAccessTokenAsRefreshToken() {
 		TokenResult result = adapter.issue(member());
 
 		assertThrows(
 				InvalidRefreshTokenException.class,
 				() -> adapter.extractRefreshTokenMemberId(result.accessToken())
+		);
+	}
+
+	@Test
+	void rejectsRefreshTokenAsAccessToken() {
+		TokenResult result = adapter.issue(member());
+
+		assertThrows(
+				com.example.post.member.application.exception.InvalidAccessTokenException.class,
+				() -> adapter.extractAccessTokenMember(result.refreshToken())
 		);
 	}
 

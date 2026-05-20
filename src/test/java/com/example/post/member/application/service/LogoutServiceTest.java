@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.example.post.member.application.exception.InvalidRefreshTokenException;
 import com.example.post.member.application.port.in.LogoutCommand;
 import com.example.post.member.application.port.in.TokenResult;
+import com.example.post.member.application.port.out.AccessTokenMemberClaims;
 import com.example.post.member.application.port.out.RefreshTokenStorePort;
 import com.example.post.member.application.port.out.TokenProviderPort;
 import com.example.post.member.domain.model.Member;
@@ -41,6 +42,11 @@ class LogoutServiceTest {
 		@Override
 		public TokenResult issue(Member member) {
 			return new TokenResult("Bearer", "access-token", "refresh-token", 900);
+		}
+
+		@Override
+		public AccessTokenMemberClaims extractAccessTokenMember(String accessToken) {
+			return new AccessTokenMemberClaims(1L, "minu@example.com", "minu");
 		}
 
 		@Override

@@ -8,6 +8,8 @@ public interface TokenProviderPort {
 
 	TokenResult issue(Member member);
 
+	AccessTokenMemberClaims extractAccessTokenMember(String accessToken);
+
 	Long extractRefreshTokenMemberId(String refreshToken);
 
 	Duration refreshTokenTtl();

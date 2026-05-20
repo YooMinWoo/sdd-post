@@ -63,6 +63,15 @@ PostPersistenceAdapter
 - 도메인 예외는 의미 있는 이름이나 안정적인 메시지로 표현한다.
 - 신규 도메인/애플리케이션 검증 실패는 `IllegalArgumentException`으로 뭉뚱그리지 않고 의미 있는 예외 또는 안정적인 에러 코드로 표현한다.
 - 에러 코드는 bounded context별 enum으로 분리하고, 각 enum 값은 코드 문자열과 설명을 함께 제공한다.
+- 도메인 모델은 정적 팩터리와 private constructor로 생성 경로를 통제한다.
+- 도메인 모델에는 `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`를 사용하지 않는다.
+
+## Lombok 규칙
+
+- Lombok은 반복 코드를 줄이는 목적으로만 제한적으로 사용한다.
+- 도메인 모델에는 생성자나 빌더를 자동 생성하는 Lombok 어노테이션을 사용하지 않는다.
+- JPA Entity에는 필요한 경우 `@NoArgsConstructor(access = AccessLevel.PROTECTED)`를 사용할 수 있다.
+- JPA Entity의 `@AllArgsConstructor`, `@Builder`는 기본적으로 사용하지 않고, 기존 private constructor와 정적 변환 메서드로 생성 경로를 제한한다.
 
 ## 애플리케이션 규칙
 
@@ -82,7 +91,9 @@ PostPersistenceAdapter
 ## API 응답과 Swagger 규칙
 
 - 성공과 실패 응답은 공통 `ApiResponse<T>` 구조를 기본으로 사용한다.
-- 성공 응답의 `message`는 한글 메시지를 사용하고, 실패 응답의 `message`는 안정적인 에러 코드를 사용한다.
+- 성공 응답의 `message`는 한글 메시지를 사용한다.
+- 실패 응답의 `code`는 안정적인 영문 에러 코드를 사용하고, `message`는 사용자에게 표시 가능한 한글 메시지를 사용한다.
+- 에러 코드 enum의 `description()`은 실패 응답의 기본 한글 메시지로 사용할 수 있어야 한다.
 - 전역 예외 처리는 커스텀 예외를 우선 처리하고, `IllegalArgumentException`은 기존 호환 또는 fallback 용도로만 사용한다.
 - 본문이 없는 `204 No Content` 응답은 공통 응답 본문을 강제하지 않는다.
 - 컨트롤러 Swagger 문서는 `global.web.swagger`의 API별 문서 어노테이션을 우선 사용한다.

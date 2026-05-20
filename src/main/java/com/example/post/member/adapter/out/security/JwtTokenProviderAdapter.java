@@ -1,8 +1,10 @@
 package com.example.post.member.adapter.out.security;
 
 import com.example.post.global.config.JwtProperties;
+import com.example.post.member.application.exception.InvalidAccessTokenException;
 import com.example.post.member.application.exception.InvalidRefreshTokenException;
 import com.example.post.member.application.port.in.TokenResult;
+import com.example.post.member.application.port.out.AccessTokenMemberClaims;
 import com.example.post.member.application.port.out.TokenProviderPort;
 import com.example.post.member.domain.model.Member;
 import io.jsonwebtoken.Claims;
@@ -50,6 +52,30 @@ public class JwtTokenProviderAdapter implements TokenProviderPort {
 				refreshToken,
 				jwtProperties.getAccessToken().getExpirationSeconds()
 		);
+	}
+
+	@Override
+	public AccessTokenMemberClaims extractAccessTokenMember(String accessToken) {
+		try {
+			Claims claims = Jwts.parser()
+					.verifyWith(secretKey(jwtProperties.getAccessToken().getSecret()))
+					.clock(() -> Date.from(Instant.now(clock)))
+					.build()
+					.parseSignedClaims(accessToken)
+					.getPayload();
+
+			if (!ACCESS_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
+				throw new InvalidAccessTokenException();
+			}
+			return new AccessTokenMemberClaims(
+					Long.valueOf(claims.getSubject()),
+					claims.get("email", String.class),
+					claims.get("nickname", String.class)
+			);
+		}
+		catch (JwtException | IllegalArgumentException exception) {
+			throw new InvalidAccessTokenException();
+		}
 	}
 
 	@Override
