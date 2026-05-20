@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.domain.model.Post;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -47,5 +48,24 @@ class PostPersistenceAdapterTest {
 		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
 
 		assertTrue(adapter.findById(999L).isEmpty());
+	}
+
+	@Test
+	void findsPostsByPageOrderByCreatedAtDesc() {
+		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
+		adapter.save(Post.create("old", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
+		adapter.save(Post.create("new", "content", 1L, Instant.parse("2026-05-20T01:00:00Z")));
+
+		PostPageResult result = adapter.findAllOrderByCreatedAtDesc(0, 10);
+
+		assertEquals(2, result.posts().size());
+		assertEquals("new", result.posts().get(0).getTitle());
+		assertEquals("old", result.posts().get(1).getTitle());
+		assertEquals(0, result.page());
+		assertEquals(10, result.size());
+		assertEquals(2, result.totalElements());
+		assertEquals(1, result.totalPages());
+		assertTrue(result.first());
+		assertTrue(result.last());
 	}
 }

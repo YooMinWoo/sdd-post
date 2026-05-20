@@ -14,7 +14,9 @@ import com.example.post.member.application.port.out.TokenProviderPort;
 import com.example.post.member.domain.model.Member;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class LoginServiceTest {
@@ -94,6 +96,11 @@ class LoginServiceTest {
 		@Override
 		public Optional<Member> findById(Long id) {
 			return Optional.empty();
+		}
+
+		@Override
+		public List<Member> findAllById(Set<Long> ids) {
+			return List.of();
 		}
 
 		@Override

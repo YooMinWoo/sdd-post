@@ -38,3 +38,4 @@
 - [007-global-exception-policy](../specs/007-global-exception-policy/spec.md): 명시적 예외와 에러 코드 기반 전역 예외 처리 정책
 - [008-post-create-auth-korean-errors](../specs/008-post-create-auth-korean-errors/spec.md): 게시글 작성 인증 필수화와 한글 에러 응답 정책
 - [009-post-read](../specs/009-post-read/spec.md): 게시글 id 기반 상세 조회
+- [010-post-list](../specs/010-post-list/spec.md): 게시글 최신순 페이징 목록 조회

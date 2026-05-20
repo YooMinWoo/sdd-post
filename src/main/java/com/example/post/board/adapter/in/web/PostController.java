@@ -3,6 +3,10 @@ package com.example.post.board.adapter.in.web;
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.ListPostsQuery;
+import com.example.post.board.application.port.in.ListPostsResult;
+import com.example.post.board.application.port.in.ListPostsUseCase;
+import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
 import com.example.post.board.application.port.in.ReadPostUseCase;
@@ -10,9 +14,11 @@ import com.example.post.global.exception.BusinessException;
 import com.example.post.global.security.AuthenticatedMemberPrincipal;
 import com.example.post.global.web.ApiResponse;
 import com.example.post.global.web.swagger.CreatePostApiDocs;
+import com.example.post.global.web.swagger.ListPostsApiDocs;
 import com.example.post.global.web.swagger.ReadPostApiDocs;
 import com.example.post.member.exception.MemberErrorCode;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,6 +39,7 @@ public class PostController {
 
 	private final CreatePostUseCase createPostUseCase;
 	private final ReadPostUseCase readPostUseCase;
+	private final ListPostsUseCase listPostsUseCase;
 
 	@PostMapping
 	@CreatePostApiDocs
@@ -71,5 +79,39 @@ public class PostController {
 						result.createdAt()
 				)
 		));
+	}
+
+	@GetMapping
+	@ListPostsApiDocs
+	public ResponseEntity<ApiResponse<ListPostsResponse>> listPosts(
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		ListPostsResult result = listPostsUseCase.listPosts(new ListPostsQuery(page, size));
+
+		return ResponseEntity.ok(ApiResponse.success(
+				"게시글 목록을 조회했습니다.",
+				new ListPostsResponse(
+						toPostSummaryResponses(result.posts()),
+						result.page(),
+						result.size(),
+						result.totalElements(),
+						result.totalPages(),
+						result.first(),
+						result.last()
+				)
+		));
+	}
+
+	private static List<PostSummaryResponse> toPostSummaryResponses(List<PostSummaryResult> posts) {
+		return posts.stream()
+				.map(post -> new PostSummaryResponse(
+						post.id(),
+						post.title(),
+						post.authorMemberId(),
+						post.author(),
+						post.createdAt()
+				))
+				.toList();
 	}
 }

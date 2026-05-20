@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.ListPostsQuery;
+import com.example.post.board.application.port.in.ListPostsResult;
+import com.example.post.board.application.port.in.ListPostsUseCase;
+import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
 import com.example.post.board.application.port.in.ReadPostUseCase;
@@ -19,6 +23,7 @@ import com.example.post.global.web.GlobalExceptionHandler;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -34,8 +39,9 @@ class PostControllerTest {
 
 	private final FakeCreatePostUseCase createPostUseCase = new FakeCreatePostUseCase();
 	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
+	private final FakeListPostsUseCase listPostsUseCase = new FakeListPostsUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
-			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase))
+			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase, listPostsUseCase))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 			.setControllerAdvice(new GlobalExceptionHandler(
 					Clock.fixed(Instant.parse("2026-05-20T00:00:00Z"), ZoneOffset.UTC)
@@ -190,6 +196,46 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.path").value("/posts/0"));
 	}
 
+	@Test
+	void returnsPostListWithoutContent() throws Exception {
+		mockMvc.perform(get("/posts")
+						.param("page", "0")
+						.param("size", "10"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("게시글 목록을 조회했습니다."))
+				.andExpect(jsonPath("$.data.posts[0].id").value(2))
+				.andExpect(jsonPath("$.data.posts[0].title").value("Second"))
+				.andExpect(jsonPath("$.data.posts[0].content").doesNotExist())
+				.andExpect(jsonPath("$.data.posts[0].authorMemberId").value(1))
+				.andExpect(jsonPath("$.data.posts[0].author").value("minu"))
+				.andExpect(jsonPath("$.data.posts[0].createdAt").value("2026-05-20T01:00:00Z"))
+				.andExpect(jsonPath("$.data.page").value(0))
+				.andExpect(jsonPath("$.data.size").value(10))
+				.andExpect(jsonPath("$.data.totalElements").value(2))
+				.andExpect(jsonPath("$.data.totalPages").value(1))
+				.andExpect(jsonPath("$.data.first").value(true))
+				.andExpect(jsonPath("$.data.last").value(true))
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
+	}
+
+	@Test
+	void returnsBadRequestForInvalidPageRequest() throws Exception {
+		listPostsUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(get("/posts")
+						.param("page", "-1")
+						.param("size", "10"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.data").doesNotExist())
+				.andExpect(jsonPath("$.path").value("/posts"));
+	}
+
 	private static RequestPostProcessor authenticatedMember() {
 		return request -> {
 			SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -235,6 +281,42 @@ class PostControllerTest {
 					2L,
 					"minu",
 					Instant.parse("2026-05-20T00:00:00Z")
+			);
+		}
+	}
+
+	private static class FakeListPostsUseCase implements ListPostsUseCase {
+
+		private ErrorCode errorCode;
+
+		@Override
+		public ListPostsResult listPosts(ListPostsQuery query) {
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new ListPostsResult(
+					List.of(
+							new PostSummaryResult(
+									2L,
+									"Second",
+									1L,
+									"minu",
+									Instant.parse("2026-05-20T01:00:00Z")
+							),
+							new PostSummaryResult(
+									1L,
+									"First",
+									1L,
+									"minu",
+									Instant.parse("2026-05-20T00:00:00Z")
+							)
+					),
+					query.page(),
+					query.size(),
+					2,
+					1,
+					true,
+					true
 			);
 		}
 	}

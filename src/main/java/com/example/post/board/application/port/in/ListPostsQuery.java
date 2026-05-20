@@ -1,0 +1,4 @@
+package com.example.post.board.application.port.in;
+
+public record ListPostsQuery(Integer page, Integer size) {
+}

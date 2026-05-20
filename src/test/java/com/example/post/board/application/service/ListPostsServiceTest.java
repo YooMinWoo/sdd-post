@@ -1,0 +1,123 @@
+package com.example.post.board.application.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.example.post.board.application.port.in.ListPostsQuery;
+import com.example.post.board.application.port.in.ListPostsResult;
+import com.example.post.board.application.port.out.AuthorMemberPort;
+import com.example.post.board.application.port.out.PostPageResult;
+import com.example.post.board.application.port.out.PostRepositoryPort;
+import com.example.post.board.domain.model.Post;
+import com.example.post.global.exception.BusinessException;
+import com.example.post.global.exception.GlobalErrorCode;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
+class ListPostsServiceTest {
+
+	@Test
+	void listsPostsWithCurrentAuthorNickname() {
+		FakePostRepositoryPort repositoryPort = new FakePostRepositoryPort();
+		FakeAuthorMemberPort authorMemberPort = new FakeAuthorMemberPort();
+		repositoryPort.pageResult = new PostPageResult(
+				List.of(
+						Post.rehydrate(2L, "second", "content 2", 1L, Instant.parse("2026-05-20T01:00:00Z")),
+						Post.rehydrate(1L, "first", "content 1", 1L, Instant.parse("2026-05-20T00:00:00Z"))
+				),
+				0,
+				10,
+				2,
+				1,
+				true,
+				true
+		);
+		ListPostsService service = new ListPostsService(repositoryPort, authorMemberPort);
+
+		ListPostsResult result = service.listPosts(new ListPostsQuery(0, 10));
+
+		assertEquals(2, result.posts().size());
+		assertEquals(2L, result.posts().get(0).id());
+		assertEquals("second", result.posts().get(0).title());
+		assertEquals(1L, result.posts().get(0).authorMemberId());
+		assertEquals("minu", result.posts().get(0).author());
+		assertEquals(Instant.parse("2026-05-20T01:00:00Z"), result.posts().get(0).createdAt());
+		assertEquals(0, result.page());
+		assertEquals(10, result.size());
+		assertEquals(2, result.totalElements());
+		assertEquals(1, result.totalPages());
+		assertEquals(true, result.first());
+		assertEquals(true, result.last());
+		assertEquals(1, authorMemberPort.batchLookupCount);
+		assertEquals(0, authorMemberPort.singleLookupCount);
+		assertEquals(Set.of(1L), authorMemberPort.requestedMemberIds);
+	}
+
+	@Test
+	void rejectsNegativePage() {
+		ListPostsService service = new ListPostsService(new FakePostRepositoryPort(), new FakeAuthorMemberPort());
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.listPosts(new ListPostsQuery(-1, 10))
+		);
+
+		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
+	}
+
+	@Test
+	void rejectsTooLargeSize() {
+		ListPostsService service = new ListPostsService(new FakePostRepositoryPort(), new FakeAuthorMemberPort());
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.listPosts(new ListPostsQuery(0, 101))
+		);
+
+		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
+	}
+
+	private static class FakePostRepositoryPort implements PostRepositoryPort {
+
+		private PostPageResult pageResult = new PostPageResult(List.of(), 0, 10, 0, 0, true, true);
+
+		@Override
+		public Post save(Post post) {
+			return post;
+		}
+
+		@Override
+		public Optional<Post> findById(Long id) {
+			return Optional.empty();
+		}
+
+		@Override
+		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
+			return pageResult;
+		}
+	}
+
+	private static class FakeAuthorMemberPort implements AuthorMemberPort {
+
+		private int singleLookupCount;
+		private int batchLookupCount;
+		private Set<Long> requestedMemberIds = Set.of();
+
+		@Override
+		public String getNicknameById(Long memberId) {
+			singleLookupCount++;
+			return "minu";
+		}
+
+		@Override
+		public Map<Long, String> getNicknamesByIds(Set<Long> memberIds) {
+			batchLookupCount++;
+			requestedMemberIds = Set.copyOf(memberIds);
+			return Map.of(1L, "minu");
+		}
+	}
+}

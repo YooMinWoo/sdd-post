@@ -14,8 +14,10 @@ import com.example.post.member.domain.model.Member;
 import com.example.post.member.exception.MemberErrorCode;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class SignupServiceTest {
@@ -101,6 +103,11 @@ class SignupServiceTest {
 		@Override
 		public Optional<Member> findById(Long id) {
 			return Optional.empty();
+		}
+
+		@Override
+		public List<Member> findAllById(Set<Long> ids) {
+			return List.of();
 		}
 
 		@Override

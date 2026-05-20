@@ -8,4 +8,6 @@ public interface PostRepositoryPort {
 	Post save(Post post);
 
 	Optional<Post> findById(Long id);
+
+	PostPageResult findAllOrderByCreatedAtDesc(int page, int size);
 }

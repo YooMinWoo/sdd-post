@@ -6,13 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
 import com.example.post.board.application.port.out.AuthorMemberPort;
+import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.application.port.out.PostRepositoryPort;
 import com.example.post.board.domain.model.Post;
 import com.example.post.board.exception.BoardErrorCode;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.GlobalErrorCode;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ReadPostServiceTest {
@@ -76,6 +80,11 @@ class ReadPostServiceTest {
 		public Optional<Post> findById(Long id) {
 			return post;
 		}
+
+		@Override
+		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
+			return new PostPageResult(List.of(), page, size, 0, 0, true, true);
+		}
 	}
 
 	private static class FakeAuthorMemberPort implements AuthorMemberPort {
@@ -83,6 +92,11 @@ class ReadPostServiceTest {
 		@Override
 		public String getNicknameById(Long memberId) {
 			return "minu";
+		}
+
+		@Override
+		public Map<Long, String> getNicknamesByIds(Set<Long> memberIds) {
+			return Map.of(1L, "minu");
 		}
 	}
 }

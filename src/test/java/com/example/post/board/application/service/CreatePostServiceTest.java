@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
+import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.application.port.out.PostRepositoryPort;
 import com.example.post.board.domain.model.Post;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class CreatePostServiceTest {
@@ -35,6 +37,11 @@ class CreatePostServiceTest {
 		@Override
 		public java.util.Optional<Post> findById(Long id) {
 			return java.util.Optional.empty();
+		}
+
+		@Override
+		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
+			return new PostPageResult(List.of(), page, size, 0, 0, true, true);
 		}
 	}
 }
