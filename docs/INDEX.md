@@ -40,3 +40,4 @@
 - [009-post-read](../specs/009-post-read/spec.md): 게시글 id 기반 상세 조회
 - [010-post-list](../specs/010-post-list/spec.md): 게시글 최신순 페이징 목록 조회
 - [011-post-delete](../specs/011-post-delete/spec.md): 작성자 본인 게시글 소프트 삭제
+- [012-comment-create](../specs/012-comment-create/spec.md): 로그인 회원의 댓글 작성

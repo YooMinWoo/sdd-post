@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.post.board.application.port.in.CreateCommentCommand;
+import com.example.post.board.application.port.in.CreateCommentResult;
+import com.example.post.board.application.port.in.CreateCommentUseCase;
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
@@ -43,11 +46,18 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class PostControllerTest {
 
 	private final FakeCreatePostUseCase createPostUseCase = new FakeCreatePostUseCase();
+	private final FakeCreateCommentUseCase createCommentUseCase = new FakeCreateCommentUseCase();
 	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
 	private final FakeListPostsUseCase listPostsUseCase = new FakeListPostsUseCase();
 	private final FakeDeletePostUseCase deletePostUseCase = new FakeDeletePostUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
-			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase, listPostsUseCase, deletePostUseCase))
+			.standaloneSetup(new PostController(
+					createPostUseCase,
+					createCommentUseCase,
+					readPostUseCase,
+					listPostsUseCase,
+					deletePostUseCase
+			))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 			.setControllerAdvice(new GlobalExceptionHandler(
 					Clock.fixed(Instant.parse("2026-05-20T00:00:00Z"), ZoneOffset.UTC)
@@ -157,6 +167,124 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.path").value("/posts"))
 				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
 				.andExpect(jsonPath("$.errors").isArray());
+	}
+
+	@Test
+	void returnsCreatedComment() throws Exception {
+		mockMvc.perform(post("/posts/{postId}/comments", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Good post"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.code").doesNotExist())
+				.andExpect(jsonPath("$.message").value("댓글이 생성되었습니다."))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.content").doesNotExist())
+				.andExpect(jsonPath("$.data.postId").doesNotExist())
+				.andExpect(jsonPath("$.data.authorMemberId").doesNotExist())
+				.andExpect(jsonPath("$.timestamp").exists())
+				.andExpect(jsonPath("$.errors").isArray());
+
+		assertEquals(1L, createCommentUseCase.command.postId());
+		assertEquals("Good post", createCommentUseCase.command.content());
+		assertEquals(1L, createCommentUseCase.command.authorMemberId());
+	}
+
+	@Test
+	void returnsUnauthorizedForCreateCommentWithoutAuthentication() throws Exception {
+		mockMvc.perform(post("/posts/{postId}/comments", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Good post"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments"));
+	}
+
+	@Test
+	void returnsNotFoundForCreateCommentMissingPost() throws Exception {
+		createCommentUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(post("/posts/{postId}/comments", 999L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Good post"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/999/comments"));
+	}
+
+	@Test
+	void returnsBadRequestForCreateCommentInvalidPostId() throws Exception {
+		createCommentUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(post("/posts/{postId}/comments", 0L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Good post"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/0/comments"));
+	}
+
+	@Test
+	void returnsBadRequestForCreateCommentBlankContent() throws Exception {
+		createCommentUseCase.errorCode = BoardErrorCode.COMMENT_CONTENT_REQUIRED;
+
+		mockMvc.perform(post("/posts/{postId}/comments", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": " "
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_CONTENT_REQUIRED"))
+				.andExpect(jsonPath("$.message").value("댓글 본문은 필수입니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments"));
+	}
+
+	@Test
+	void returnsBadRequestForCreateCommentTooLongContent() throws Exception {
+		createCommentUseCase.errorCode = BoardErrorCode.COMMENT_CONTENT_TOO_LONG;
+
+		mockMvc.perform(post("/posts/{postId}/comments", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "too long"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_CONTENT_TOO_LONG"))
+				.andExpect(jsonPath("$.message").value("댓글 본문은 최대 1,000자까지 허용됩니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments"));
 	}
 
 	@Test
@@ -328,6 +456,21 @@ class PostControllerTest {
 				throw new IllegalArgumentException("title is required");
 			}
 			return new CreatePostResult(1L);
+		}
+	}
+
+	private static class FakeCreateCommentUseCase implements CreateCommentUseCase {
+
+		private CreateCommentCommand command;
+		private ErrorCode errorCode;
+
+		@Override
+		public CreateCommentResult createComment(CreateCommentCommand command) {
+			this.command = command;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new CreateCommentResult(1L);
 		}
 	}
 
