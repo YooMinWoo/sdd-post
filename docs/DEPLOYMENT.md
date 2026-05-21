@@ -2,6 +2,18 @@
 
 이 문서는 EC2 인스턴스 1대에서 Spring Boot 애플리케이션, PostgreSQL, Redis를 Docker Compose로 실행하는 절차를 설명한다.
 
+## 현재 상태
+
+현재 저장소에는 배포 준비 파일만 포함되어 있으며, 실제 AWS 리소스는 아직 생성하지 않는다.
+
+- EC2 생성 보류
+- Elastic IP 생성 보류
+- 보안 그룹 생성 보류
+- 실제 운영 배포 보류
+- GitHub Actions 배포 워크플로는 수동 실행(`workflow_dispatch`) 전용
+
+배포를 시작할 때만 아래 절차에 따라 EC2와 GitHub Secrets를 준비한 뒤 GitHub Actions에서 `Deploy` 워크플로를 수동 실행한다.
+
 ## 구성
 
 ```text
@@ -123,9 +135,12 @@ docker compose -f docker-compose.prod.yml --env-file env/.env.prod up -d app
 
 GHCR push는 기본 `GITHUB_TOKEN` 권한을 사용한다.
 
+`Deploy` 워크플로는 자동 실행되지 않는다. GitHub Actions 화면에서 수동으로 실행해야 한다.
+
 ## 후속 과제
 
 - 도메인 연결
 - HTTPS와 Nginx reverse proxy 구성
 - Flyway 마이그레이션 도입
 - DB 백업 정책 수립
+- 배포를 실제로 시작할 때 `main` push 자동 배포 여부 재검토
