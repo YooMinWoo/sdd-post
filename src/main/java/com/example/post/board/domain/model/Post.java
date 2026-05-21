@@ -65,6 +65,18 @@ public class Post {
 		this.deletedAt = Objects.requireNonNull(deletedAt, "deletedAt must not be null");
 	}
 
+	public void updateBy(Long requesterMemberId, String title, String content) {
+		Long validatedRequesterMemberId = validateAuthorMemberId(requesterMemberId);
+		if (!authorMemberId.equals(validatedRequesterMemberId)) {
+			throw new BusinessException(BoardErrorCode.POST_UPDATE_FORBIDDEN);
+		}
+		if (isDeleted()) {
+			throw new BusinessException(BoardErrorCode.POST_NOT_FOUND);
+		}
+		this.title = validateRequired("title", title, MAX_TITLE_LENGTH);
+		this.content = validateRequired("content", content, MAX_CONTENT_LENGTH);
+	}
+
 	public boolean isDeleted() {
 		return deletedAt != null;
 	}

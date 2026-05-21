@@ -85,6 +85,40 @@ class PostTest {
 	}
 
 	@Test
+	void updatesPostByAuthorWithNormalizedValues() {
+		Post post = Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		);
+
+		post.updateBy(2L, " updated ", " changed ");
+
+		assertEquals("updated", post.getTitle());
+		assertEquals("changed", post.getContent());
+	}
+
+	@Test
+	void rejectsUpdateByNonAuthor() {
+		Post post = Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> post.updateBy(3L, "updated", "changed")
+		);
+
+		assertEquals(BoardErrorCode.POST_UPDATE_FORBIDDEN, exception.errorCode());
+	}
+
+	@Test
 	void rejectsBlankTitle() {
 		BusinessException exception = assertThrows(BusinessException.class, () -> Post.create(" ", "content", 1L));
 

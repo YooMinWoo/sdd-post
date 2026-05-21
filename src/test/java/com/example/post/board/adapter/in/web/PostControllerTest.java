@@ -3,6 +3,7 @@ package com.example.post.board.adapter.in.web;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,6 +16,8 @@ import com.example.post.board.application.port.in.CreateCommentUseCase;
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.DeleteCommentCommand;
+import com.example.post.board.application.port.in.DeleteCommentUseCase;
 import com.example.post.board.application.port.in.DeletePostCommand;
 import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostCommentsQuery;
@@ -27,6 +30,12 @@ import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
 import com.example.post.board.application.port.in.ReadPostUseCase;
+import com.example.post.board.application.port.in.UpdatePostCommand;
+import com.example.post.board.application.port.in.UpdatePostResult;
+import com.example.post.board.application.port.in.UpdatePostUseCase;
+import com.example.post.board.application.port.in.UpdateCommentCommand;
+import com.example.post.board.application.port.in.UpdateCommentResult;
+import com.example.post.board.application.port.in.UpdateCommentUseCase;
 import com.example.post.board.exception.BoardErrorCode;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.ErrorCode;
@@ -54,6 +63,9 @@ class PostControllerTest {
 	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
 	private final FakeListPostsUseCase listPostsUseCase = new FakeListPostsUseCase();
 	private final FakeListPostCommentsUseCase listPostCommentsUseCase = new FakeListPostCommentsUseCase();
+	private final FakeUpdatePostUseCase updatePostUseCase = new FakeUpdatePostUseCase();
+	private final FakeUpdateCommentUseCase updateCommentUseCase = new FakeUpdateCommentUseCase();
+	private final FakeDeleteCommentUseCase deleteCommentUseCase = new FakeDeleteCommentUseCase();
 	private final FakeDeletePostUseCase deletePostUseCase = new FakeDeletePostUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
 			.standaloneSetup(new PostController(
@@ -62,6 +74,9 @@ class PostControllerTest {
 					readPostUseCase,
 					listPostsUseCase,
 					listPostCommentsUseCase,
+					updatePostUseCase,
+					updateCommentUseCase,
+					deleteCommentUseCase,
 					deletePostUseCase
 			))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
@@ -352,6 +367,283 @@ class PostControllerTest {
 	}
 
 	@Test
+	void returnsUpdatedPost() throws Exception {
+		mockMvc.perform(patch("/posts/{postId}", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Updated",
+								  "content": "Updated content"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("게시글이 수정되었습니다."))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.title").value("Updated"))
+				.andExpect(jsonPath("$.data.content").value("Updated content"))
+				.andExpect(jsonPath("$.data.authorMemberId").value(1))
+				.andExpect(jsonPath("$.data.author").value("minu"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.data.commentCount").value(2));
+
+		assertEquals(1L, updatePostUseCase.command.postId());
+		assertEquals("Updated", updatePostUseCase.command.title());
+		assertEquals("Updated content", updatePostUseCase.command.content());
+		assertEquals(1L, updatePostUseCase.command.requesterMemberId());
+	}
+
+	@Test
+	void returnsUnauthorizedForUpdatePostWithoutAuthentication() throws Exception {
+		mockMvc.perform(patch("/posts/{postId}", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Updated",
+								  "content": "Updated content"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1"));
+	}
+
+	@Test
+	void returnsNotFoundForUpdatePostMissingPost() throws Exception {
+		updatePostUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(patch("/posts/{postId}", 999L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Updated",
+								  "content": "Updated content"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/999"));
+	}
+
+	@Test
+	void returnsForbiddenForUpdatePostByNonAuthor() throws Exception {
+		updatePostUseCase.errorCode = BoardErrorCode.POST_UPDATE_FORBIDDEN;
+
+		mockMvc.perform(patch("/posts/{postId}", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "Updated",
+								  "content": "Updated content"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_UPDATE_FORBIDDEN"))
+				.andExpect(jsonPath("$.message").value("게시글 수정 권한이 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1"));
+	}
+
+	@Test
+	void returnsBadRequestForUpdatePostInvalidInput() throws Exception {
+		updatePostUseCase.errorCode = BoardErrorCode.POST_TITLE_REQUIRED;
+
+		mockMvc.perform(patch("/posts/{postId}", 1L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "title": "",
+								  "content": "Updated content"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_TITLE_REQUIRED"))
+				.andExpect(jsonPath("$.message").value("게시글 제목은 필수입니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1"));
+	}
+
+	@Test
+	void returnsUpdatedComment() throws Exception {
+		mockMvc.perform(patch("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Updated comment"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("댓글이 수정되었습니다."))
+				.andExpect(jsonPath("$.data.id").value(10))
+				.andExpect(jsonPath("$.data.authorMemberId").value(1))
+				.andExpect(jsonPath("$.data.author").value("minu"))
+				.andExpect(jsonPath("$.data.content").value("Updated comment"))
+				.andExpect(jsonPath("$.data.createdAt").value("2026-05-21T00:00:00Z"));
+
+		assertEquals(1L, updateCommentUseCase.command.postId());
+		assertEquals(10L, updateCommentUseCase.command.commentId());
+		assertEquals("Updated comment", updateCommentUseCase.command.content());
+		assertEquals(1L, updateCommentUseCase.command.requesterMemberId());
+	}
+
+	@Test
+	void returnsUnauthorizedForUpdateCommentWithoutAuthentication() throws Exception {
+		mockMvc.perform(patch("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Updated comment"
+								}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/10"));
+	}
+
+	@Test
+	void returnsNotFoundForUpdateCommentMissingComment() throws Exception {
+		updateCommentUseCase.errorCode = BoardErrorCode.COMMENT_NOT_FOUND;
+
+		mockMvc.perform(patch("/posts/{postId}/comments/{commentId}", 1L, 999L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Updated comment"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("댓글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/999"));
+	}
+
+	@Test
+	void returnsForbiddenForUpdateCommentByNonAuthor() throws Exception {
+		updateCommentUseCase.errorCode = BoardErrorCode.COMMENT_UPDATE_FORBIDDEN;
+
+		mockMvc.perform(patch("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": "Updated comment"
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_UPDATE_FORBIDDEN"))
+				.andExpect(jsonPath("$.message").value("댓글 수정 권한이 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/10"));
+	}
+
+	@Test
+	void returnsBadRequestForUpdateCommentInvalidContent() throws Exception {
+		updateCommentUseCase.errorCode = BoardErrorCode.COMMENT_CONTENT_REQUIRED;
+
+		mockMvc.perform(patch("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "content": " "
+								}
+								""")
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_CONTENT_REQUIRED"))
+				.andExpect(jsonPath("$.message").value("댓글 본문은 필수입니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/10"));
+	}
+
+	@Test
+	void returnsNoContentWhenDeletingComment() throws Exception {
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.with(authenticatedMember()))
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""));
+
+		assertEquals(1L, deleteCommentUseCase.command.postId());
+		assertEquals(10L, deleteCommentUseCase.command.commentId());
+		assertEquals(1L, deleteCommentUseCase.command.requesterMemberId());
+	}
+
+	@Test
+	void returnsUnauthorizedForDeleteCommentWithoutAuthentication() throws Exception {
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 1L, 10L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/10"));
+	}
+
+	@Test
+	void returnsNotFoundForDeleteCommentMissingPost() throws Exception {
+		deleteCommentUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 999L, 10L)
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/999/comments/10"));
+	}
+
+	@Test
+	void returnsNotFoundForDeleteCommentMissingComment() throws Exception {
+		deleteCommentUseCase.errorCode = BoardErrorCode.COMMENT_NOT_FOUND;
+
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 1L, 999L)
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("댓글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/999"));
+	}
+
+	@Test
+	void returnsForbiddenForDeleteCommentByNonAuthor() throws Exception {
+		deleteCommentUseCase.errorCode = BoardErrorCode.COMMENT_DELETE_FORBIDDEN;
+
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 1L, 10L)
+						.with(authenticatedMember()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("COMMENT_DELETE_FORBIDDEN"))
+				.andExpect(jsonPath("$.message").value("댓글 삭제 권한이 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments/10"));
+	}
+
+	@Test
+	void returnsBadRequestForDeleteCommentInvalidRequest() throws Exception {
+		deleteCommentUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(delete("/posts/{postId}/comments/{commentId}", 0L, 10L)
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/0/comments/10"));
+	}
+
+	@Test
 	void returnsNoContentWhenDeletingPost() throws Exception {
 		mockMvc.perform(delete("/posts/{postId}", 1L)
 						.with(authenticatedMember()))
@@ -521,6 +813,64 @@ class PostControllerTest {
 					true,
 					true
 			);
+		}
+	}
+
+	private static class FakeUpdatePostUseCase implements UpdatePostUseCase {
+
+		private UpdatePostCommand command;
+		private ErrorCode errorCode;
+
+		@Override
+		public UpdatePostResult updatePost(UpdatePostCommand command) {
+			this.command = command;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new UpdatePostResult(
+					command.postId(),
+					command.title(),
+					command.content(),
+					command.requesterMemberId(),
+					"minu",
+					Instant.parse("2026-05-20T00:00:00Z"),
+					2
+			);
+		}
+	}
+
+	private static class FakeUpdateCommentUseCase implements UpdateCommentUseCase {
+
+		private UpdateCommentCommand command;
+		private ErrorCode errorCode;
+
+		@Override
+		public UpdateCommentResult updateComment(UpdateCommentCommand command) {
+			this.command = command;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new UpdateCommentResult(
+					command.commentId(),
+					command.requesterMemberId(),
+					"minu",
+					command.content(),
+					Instant.parse("2026-05-21T00:00:00Z")
+			);
+		}
+	}
+
+	private static class FakeDeleteCommentUseCase implements DeleteCommentUseCase {
+
+		private DeleteCommentCommand command;
+		private ErrorCode errorCode;
+
+		@Override
+		public void deleteComment(DeleteCommentCommand command) {
+			this.command = command;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
 		}
 	}
 

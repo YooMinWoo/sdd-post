@@ -33,6 +33,40 @@ class CommentPersistenceAdapterTest {
 	}
 
 	@Test
+	void findsCommentById() {
+		CommentPersistenceAdapter adapter = new CommentPersistenceAdapter(commentJpaRepository);
+		Comment savedComment = adapter.save(Comment.create(
+				1L,
+				2L,
+				"comment",
+				Instant.parse("2026-05-21T00:00:00Z")
+		));
+
+		Comment foundComment = adapter.findById(savedComment.getId()).orElseThrow();
+
+		assertEquals(savedComment.getId(), foundComment.getId());
+		assertEquals(1L, foundComment.getPostId());
+		assertEquals(2L, foundComment.getAuthorMemberId());
+	}
+
+	@Test
+	void savesUpdatedCommentContent() {
+		CommentPersistenceAdapter adapter = new CommentPersistenceAdapter(commentJpaRepository);
+		Comment savedComment = adapter.save(Comment.create(
+				1L,
+				2L,
+				"comment",
+				Instant.parse("2026-05-21T00:00:00Z")
+		));
+
+		savedComment.updateBy(1L, 2L, "updated");
+		adapter.save(savedComment);
+
+		Comment foundComment = adapter.findById(savedComment.getId()).orElseThrow();
+		assertEquals("updated", foundComment.getContent());
+	}
+
+	@Test
 	void findsCommentsByPostIdOrderByCreatedAtDesc() {
 		CommentPersistenceAdapter adapter = new CommentPersistenceAdapter(commentJpaRepository);
 		adapter.save(Comment.create(1L, 2L, "old", Instant.parse("2026-05-21T01:00:00Z")));
@@ -83,5 +117,17 @@ class CommentPersistenceAdapterTest {
 		assertEquals("three", otherPostComments.comments().get(0).getContent());
 		assertEquals(false, counts.containsKey(1L));
 		assertEquals(1L, counts.get(2L));
+	}
+
+	@Test
+	void deletesCommentByIdOnly() {
+		CommentPersistenceAdapter adapter = new CommentPersistenceAdapter(commentJpaRepository);
+		Comment deletedTarget = adapter.save(Comment.create(1L, 2L, "delete", Instant.parse("2026-05-21T01:00:00Z")));
+		Comment remaining = adapter.save(Comment.create(1L, 3L, "remain", Instant.parse("2026-05-21T02:00:00Z")));
+
+		adapter.deleteById(deletedTarget.getId());
+
+		assertEquals(true, adapter.findById(deletedTarget.getId()).isEmpty());
+		assertEquals(remaining.getId(), adapter.findById(remaining.getId()).orElseThrow().getId());
 	}
 }

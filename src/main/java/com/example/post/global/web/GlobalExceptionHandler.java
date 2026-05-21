@@ -63,8 +63,9 @@ public class GlobalExceptionHandler {
 	private static HttpStatus httpStatus(ErrorCode errorCode) {
 		return switch (errorCode.code()) {
 			case "DUPLICATE_EMAIL" -> HttpStatus.CONFLICT;
-			case "POST_NOT_FOUND" -> HttpStatus.NOT_FOUND;
-			case "POST_DELETE_FORBIDDEN" -> HttpStatus.FORBIDDEN;
+			case "POST_NOT_FOUND", "COMMENT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+			case "POST_DELETE_FORBIDDEN", "POST_UPDATE_FORBIDDEN", "COMMENT_DELETE_FORBIDDEN",
+					"COMMENT_UPDATE_FORBIDDEN" -> HttpStatus.FORBIDDEN;
 			case "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "UNAUTHORIZED", "INVALID_ACCESS_TOKEN" ->
 					HttpStatus.UNAUTHORIZED;
 			case "INVALID_REQUEST", "POST_TITLE_REQUIRED", "POST_TITLE_TOO_LONG", "COMMENT_CONTENT_REQUIRED",

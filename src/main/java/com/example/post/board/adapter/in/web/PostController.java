@@ -7,6 +7,8 @@ import com.example.post.board.application.port.in.CreateCommentCommand;
 import com.example.post.board.application.port.in.CreateCommentResult;
 import com.example.post.board.application.port.in.CreateCommentUseCase;
 import com.example.post.board.application.port.in.CommentSummaryResult;
+import com.example.post.board.application.port.in.DeleteCommentCommand;
+import com.example.post.board.application.port.in.DeleteCommentUseCase;
 import com.example.post.board.application.port.in.DeletePostCommand;
 import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
@@ -19,15 +21,24 @@ import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
 import com.example.post.board.application.port.in.ReadPostUseCase;
+import com.example.post.board.application.port.in.UpdatePostCommand;
+import com.example.post.board.application.port.in.UpdatePostResult;
+import com.example.post.board.application.port.in.UpdatePostUseCase;
+import com.example.post.board.application.port.in.UpdateCommentCommand;
+import com.example.post.board.application.port.in.UpdateCommentResult;
+import com.example.post.board.application.port.in.UpdateCommentUseCase;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.security.AuthenticatedMemberPrincipal;
 import com.example.post.global.web.ApiResponse;
 import com.example.post.global.web.swagger.CreateCommentApiDocs;
 import com.example.post.global.web.swagger.CreatePostApiDocs;
+import com.example.post.global.web.swagger.DeleteCommentApiDocs;
 import com.example.post.global.web.swagger.DeletePostApiDocs;
 import com.example.post.global.web.swagger.ListPostCommentsApiDocs;
 import com.example.post.global.web.swagger.ListPostsApiDocs;
 import com.example.post.global.web.swagger.ReadPostApiDocs;
+import com.example.post.global.web.swagger.UpdatePostApiDocs;
+import com.example.post.global.web.swagger.UpdateCommentApiDocs;
 import com.example.post.member.exception.MemberErrorCode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -37,6 +48,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +67,9 @@ public class PostController {
 	private final ReadPostUseCase readPostUseCase;
 	private final ListPostsUseCase listPostsUseCase;
 	private final ListPostCommentsUseCase listPostCommentsUseCase;
+	private final UpdatePostUseCase updatePostUseCase;
+	private final UpdateCommentUseCase updateCommentUseCase;
+	private final DeleteCommentUseCase deleteCommentUseCase;
 	private final DeletePostUseCase deletePostUseCase;
 
 	@PostMapping
@@ -154,6 +169,76 @@ public class PostController {
 						result.totalPages(),
 						result.first(),
 						result.last()
+				)
+		));
+	}
+
+	@PatchMapping("/{postId}")
+	@UpdatePostApiDocs
+	public ResponseEntity<ApiResponse<UpdatePostResponse>> updatePost(
+			@PathVariable Long postId,
+			@RequestBody UpdatePostRequest request,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		UpdatePostResult result = updatePostUseCase.updatePost(
+				new UpdatePostCommand(postId, request.title(), request.content(), principal.id())
+		);
+
+		return ResponseEntity.ok(ApiResponse.success(
+				"게시글이 수정되었습니다.",
+				new UpdatePostResponse(
+						result.id(),
+						result.title(),
+						result.content(),
+						result.authorMemberId(),
+						result.author(),
+						result.createdAt(),
+						result.commentCount()
+				)
+		));
+	}
+
+	@DeleteMapping("/{postId}/comments/{commentId}")
+	@DeleteCommentApiDocs
+	public ResponseEntity<Void> deleteComment(
+			@PathVariable Long postId,
+			@PathVariable Long commentId,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		deleteCommentUseCase.deleteComment(new DeleteCommentCommand(postId, commentId, principal.id()));
+
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/{postId}/comments/{commentId}")
+	@UpdateCommentApiDocs
+	public ResponseEntity<ApiResponse<UpdateCommentResponse>> updateComment(
+			@PathVariable Long postId,
+			@PathVariable Long commentId,
+			@RequestBody UpdateCommentRequest request,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		UpdateCommentResult result = updateCommentUseCase.updateComment(
+				new UpdateCommentCommand(postId, commentId, request.content(), principal.id())
+		);
+
+		return ResponseEntity.ok(ApiResponse.success(
+				"댓글이 수정되었습니다.",
+				new UpdateCommentResponse(
+						result.id(),
+						result.authorMemberId(),
+						result.author(),
+						result.content(),
+						result.createdAt()
 				)
 		));
 	}

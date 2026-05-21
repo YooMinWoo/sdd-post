@@ -43,3 +43,6 @@
 - [012-comment-create](../specs/012-comment-create/spec.md): 로그인 회원의 댓글 작성
 - [013-post-comments-read](../specs/013-post-comments-read/spec.md): 게시글 댓글 페이지 분리 조회와 댓글 수 제공
 - [014-post-delete-comments](../specs/014-post-delete-comments/spec.md): 게시글 삭제 시 댓글 물리 삭제
+- [015-comment-delete](../specs/015-comment-delete/spec.md): 댓글 작성자 본인 댓글 삭제
+- [016-post-update](../specs/016-post-update/spec.md): 게시글 작성자 본인 게시글 수정
+- [017-comment-update](../specs/017-comment-update/spec.md): 댓글 작성자 본인 댓글 수정

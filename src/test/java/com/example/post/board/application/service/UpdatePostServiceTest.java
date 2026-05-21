@@ -3,8 +3,8 @@ package com.example.post.board.application.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.example.post.board.application.port.in.ReadPostQuery;
-import com.example.post.board.application.port.in.ReadPostResult;
+import com.example.post.board.application.port.in.UpdatePostCommand;
+import com.example.post.board.application.port.in.UpdatePostResult;
 import com.example.post.board.application.port.out.AuthorMemberPort;
 import com.example.post.board.application.port.out.CommentPageResult;
 import com.example.post.board.application.port.out.CommentRepositoryPort;
@@ -22,10 +22,10 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class ReadPostServiceTest {
+class UpdatePostServiceTest {
 
 	@Test
-	void readsPostWithCurrentAuthorNicknameAndCommentCount() {
+	void updatesPostByAuthorWithAuthorAndCommentCount() {
 		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
 		postRepositoryPort.post = Optional.of(Post.rehydrate(
 				1L,
@@ -36,27 +36,61 @@ class ReadPostServiceTest {
 		));
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
 		commentRepositoryPort.commentCounts = Map.of(1L, 3L);
-		ReadPostService service = new ReadPostService(
+		UpdatePostService service = new UpdatePostService(
 				postRepositoryPort,
 				new FakeAuthorMemberPort(),
 				commentRepositoryPort
 		);
 
-		ReadPostResult result = service.readPost(new ReadPostQuery(1L));
+		UpdatePostResult result = service.updatePost(new UpdatePostCommand(1L, " updated ", " changed ", 2L));
 
 		assertEquals(1L, result.id());
-		assertEquals("title", result.title());
-		assertEquals("content", result.content());
+		assertEquals("updated", result.title());
+		assertEquals("changed", result.content());
 		assertEquals(2L, result.authorMemberId());
 		assertEquals("minu", result.author());
-		assertEquals(Instant.parse("2026-05-20T00:00:00Z"), result.createdAt());
 		assertEquals(3L, result.commentCount());
+		assertEquals("updated", postRepositoryPort.savedPost.getTitle());
+		assertEquals("changed", postRepositoryPort.savedPost.getContent());
 		assertEquals(1, commentRepositoryPort.countLookupCount);
-		assertEquals(0, commentRepositoryPort.pageLookupCount);
 	}
 
 	@Test
-	void readsPostWithZeroCommentCountWhenMissingCountRow() {
+	void rejectsInvalidPostId() {
+		UpdatePostService service = new UpdatePostService(
+				new FakePostRepositoryPort(),
+				new FakeAuthorMemberPort(),
+				new FakeCommentRepositoryPort()
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.updatePost(new UpdatePostCommand(0L, "title", "content", 1L))
+		);
+
+		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
+	}
+
+	@Test
+	void rejectsMissingPostWithoutSaving() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		UpdatePostService service = new UpdatePostService(
+				postRepositoryPort,
+				new FakeAuthorMemberPort(),
+				new FakeCommentRepositoryPort()
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.updatePost(new UpdatePostCommand(999L, "title", "content", 1L))
+		);
+
+		assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.errorCode());
+		assertEquals(null, postRepositoryPort.savedPost);
+	}
+
+	@Test
+	void rejectsNonAuthorWithoutSaving() {
 		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
 		postRepositoryPort.post = Optional.of(Post.rehydrate(
 				1L,
@@ -65,58 +99,54 @@ class ReadPostServiceTest {
 				2L,
 				Instant.parse("2026-05-20T00:00:00Z")
 		));
-		ReadPostService service = new ReadPostService(
+		UpdatePostService service = new UpdatePostService(
 				postRepositoryPort,
 				new FakeAuthorMemberPort(),
 				new FakeCommentRepositoryPort()
 		);
 
-		ReadPostResult result = service.readPost(new ReadPostQuery(1L));
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.updatePost(new UpdatePostCommand(1L, "title", "content", 3L))
+		);
 
-		assertEquals(0L, result.commentCount());
+		assertEquals(BoardErrorCode.POST_UPDATE_FORBIDDEN, exception.errorCode());
+		assertEquals(null, postRepositoryPort.savedPost);
 	}
 
 	@Test
-	void rejectsInvalidPostId() {
-		ReadPostService service = new ReadPostService(
-				new FakePostRepositoryPort(),
+	void rejectsInvalidTitle() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		postRepositoryPort.post = Optional.of(Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		));
+		UpdatePostService service = new UpdatePostService(
+				postRepositoryPort,
 				new FakeAuthorMemberPort(),
 				new FakeCommentRepositoryPort()
 		);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> service.readPost(new ReadPostQuery(0L))
+				() -> service.updatePost(new UpdatePostCommand(1L, " ", "content", 2L))
 		);
 
-		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
-	}
-
-	@Test
-	void rejectsMissingPostWithoutReadingCommentCount() {
-		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		ReadPostService service = new ReadPostService(
-				new FakePostRepositoryPort(),
-				new FakeAuthorMemberPort(),
-				commentRepositoryPort
-		);
-
-		BusinessException exception = assertThrows(
-				BusinessException.class,
-				() -> service.readPost(new ReadPostQuery(999L))
-		);
-
-		assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.errorCode());
-		assertEquals(0, commentRepositoryPort.countLookupCount);
-		assertEquals(0, commentRepositoryPort.pageLookupCount);
+		assertEquals(BoardErrorCode.POST_TITLE_REQUIRED, exception.errorCode());
+		assertEquals(null, postRepositoryPort.savedPost);
 	}
 
 	private static class FakePostRepositoryPort implements PostRepositoryPort {
 
 		private Optional<Post> post = Optional.empty();
+		private Post savedPost;
 
 		@Override
 		public Post save(Post post) {
+			savedPost = post;
 			return post;
 		}
 
@@ -135,7 +165,6 @@ class ReadPostServiceTest {
 
 		private Map<Long, Long> commentCounts = Map.of();
 		private int countLookupCount;
-		private int pageLookupCount;
 
 		@Override
 		public Comment save(Comment comment) {
@@ -149,7 +178,6 @@ class ReadPostServiceTest {
 
 		@Override
 		public CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size) {
-			pageLookupCount++;
 			return new CommentPageResult(List.of(), page, size, 0, 0, true, true);
 		}
 
@@ -177,7 +205,7 @@ class ReadPostServiceTest {
 
 		@Override
 		public Map<Long, String> getNicknamesByIds(Set<Long> memberIds) {
-			return Map.of(1L, "minu");
+			return Map.of(2L, "minu");
 		}
 	}
 }

@@ -187,6 +187,11 @@ class CreateCommentServiceTest {
 		}
 
 		@Override
+		public Optional<Comment> findById(Long id) {
+			return Optional.empty();
+		}
+
+		@Override
 		public CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size) {
 			return new CommentPageResult(List.of(), page, size, 0, 0, true, true);
 		}
@@ -198,6 +203,10 @@ class CreateCommentServiceTest {
 
 		@Override
 		public void deleteAllByPostId(Long postId) {
+		}
+
+		@Override
+		public void deleteById(Long id) {
 		}
 	}
 }

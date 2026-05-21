@@ -39,6 +39,29 @@ public class Comment {
 		return new Comment(id, postId, authorMemberId, content, createdAt);
 	}
 
+	public void deleteBy(Long requestedPostId, Long requesterMemberId) {
+		Long validatedPostId = validateId(requestedPostId);
+		Long validatedRequesterMemberId = validateId(requesterMemberId);
+		if (!postId.equals(validatedPostId)) {
+			throw new BusinessException(BoardErrorCode.COMMENT_NOT_FOUND);
+		}
+		if (!authorMemberId.equals(validatedRequesterMemberId)) {
+			throw new BusinessException(BoardErrorCode.COMMENT_DELETE_FORBIDDEN);
+		}
+	}
+
+	public void updateBy(Long requestedPostId, Long requesterMemberId, String content) {
+		Long validatedPostId = validateId(requestedPostId);
+		Long validatedRequesterMemberId = validateId(requesterMemberId);
+		if (!postId.equals(validatedPostId)) {
+			throw new BusinessException(BoardErrorCode.COMMENT_NOT_FOUND);
+		}
+		if (!authorMemberId.equals(validatedRequesterMemberId)) {
+			throw new BusinessException(BoardErrorCode.COMMENT_UPDATE_FORBIDDEN);
+		}
+		this.content = validateContent(content);
+	}
+
 	private static Long validateId(Long id) {
 		if (id == null || id <= 0) {
 			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);

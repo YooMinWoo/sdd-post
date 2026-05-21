@@ -39,6 +39,39 @@ class CommentTest {
 	}
 
 	@Test
+	void updatesCommentByAuthorWithNormalizedContent() {
+		Comment comment = Comment.rehydrate(
+				1L,
+				2L,
+				3L,
+				"content",
+				Instant.parse("2026-05-21T00:00:00Z")
+		);
+
+		comment.updateBy(2L, 3L, " updated ");
+
+		assertEquals("updated", comment.getContent());
+	}
+
+	@Test
+	void rejectsUpdateByNonAuthor() {
+		Comment comment = Comment.rehydrate(
+				1L,
+				2L,
+				3L,
+				"content",
+				Instant.parse("2026-05-21T00:00:00Z")
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> comment.updateBy(2L, 4L, "updated")
+		);
+
+		assertEquals(BoardErrorCode.COMMENT_UPDATE_FORBIDDEN, exception.errorCode());
+	}
+
+	@Test
 	void rejectsNullContent() {
 		BusinessException exception = assertThrows(
 				BusinessException.class,

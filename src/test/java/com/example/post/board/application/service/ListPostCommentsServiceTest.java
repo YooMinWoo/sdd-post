@@ -193,6 +193,11 @@ class ListPostCommentsServiceTest {
 		}
 
 		@Override
+		public Optional<Comment> findById(Long id) {
+			return Optional.empty();
+		}
+
+		@Override
 		public CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size) {
 			pageLookupCount++;
 			return pageResult;
@@ -205,6 +210,10 @@ class ListPostCommentsServiceTest {
 
 		@Override
 		public void deleteAllByPostId(Long postId) {
+		}
+
+		@Override
+		public void deleteById(Long id) {
 		}
 	}
 

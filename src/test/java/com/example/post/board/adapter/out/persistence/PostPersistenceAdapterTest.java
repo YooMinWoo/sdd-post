@@ -65,6 +65,19 @@ class PostPersistenceAdapterTest {
 	}
 
 	@Test
+	void savesUpdatedPostTitleAndContent() {
+		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
+		Post savedPost = adapter.save(Post.create("title", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
+
+		savedPost.updateBy(1L, "updated", "changed");
+		adapter.save(savedPost);
+
+		Post foundPost = adapter.findById(savedPost.getId()).orElseThrow();
+		assertEquals("updated", foundPost.getTitle());
+		assertEquals("changed", foundPost.getContent());
+	}
+
+	@Test
 	void findsPostsByPageOrderByCreatedAtDesc() {
 		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
 		adapter.save(Post.create("old", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));

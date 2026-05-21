@@ -1,10 +1,9 @@
 package com.example.post.board.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.example.post.board.application.port.in.DeletePostCommand;
+import com.example.post.board.application.port.in.DeleteCommentCommand;
 import com.example.post.board.application.port.out.CommentPageResult;
 import com.example.post.board.application.port.out.CommentRepositoryPort;
 import com.example.post.board.application.port.out.PostPageResult;
@@ -21,12 +20,12 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class DeletePostServiceTest {
+class DeleteCommentServiceTest {
 
 	@Test
-	void deletesPostByAuthor() {
-		FakePostRepositoryPort repositoryPort = new FakePostRepositoryPort();
-		repositoryPort.post = Optional.of(Post.rehydrate(
+	void deletesCommentByAuthor() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		postRepositoryPort.post = Optional.of(Post.rehydrate(
 				1L,
 				"title",
 				"content",
@@ -34,25 +33,29 @@ class DeletePostServiceTest {
 				Instant.parse("2026-05-20T00:00:00Z")
 		));
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(repositoryPort, commentRepositoryPort);
+		commentRepositoryPort.comment = Optional.of(Comment.rehydrate(
+				10L,
+				1L,
+				3L,
+				"comment",
+				Instant.parse("2026-05-21T00:00:00Z")
+		));
+		DeleteCommentService service = new DeleteCommentService(postRepositoryPort, commentRepositoryPort);
 
-		service.deletePost(new DeletePostCommand(1L, 2L));
+		service.deleteComment(new DeleteCommentCommand(1L, 10L, 3L));
 
-		assertNotNull(repositoryPort.savedPost);
-		assertEquals(true, repositoryPort.savedPost.isDeleted());
-		assertNotNull(repositoryPort.savedPost.getDeletedAt());
 		assertEquals(1, commentRepositoryPort.deleteCallCount);
-		assertEquals(1L, commentRepositoryPort.deletedPostId);
+		assertEquals(10L, commentRepositoryPort.deletedCommentId);
 	}
 
 	@Test
-	void rejectsInvalidPostId() {
+	void rejectsInvalidPostIdWithoutDeletingComment() {
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(new FakePostRepositoryPort(), commentRepositoryPort);
+		DeleteCommentService service = new DeleteCommentService(new FakePostRepositoryPort(), commentRepositoryPort);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> service.deletePost(new DeletePostCommand(0L, 1L))
+				() -> service.deleteComment(new DeleteCommentCommand(0L, 10L, 3L))
 		);
 
 		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
@@ -60,60 +63,76 @@ class DeletePostServiceTest {
 	}
 
 	@Test
-	void rejectsInvalidRequesterMemberId() {
+	void rejectsMissingPostWithoutReadingComment() {
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(new FakePostRepositoryPort(), commentRepositoryPort);
+		DeleteCommentService service = new DeleteCommentService(new FakePostRepositoryPort(), commentRepositoryPort);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> service.deletePost(new DeletePostCommand(1L, 0L))
-		);
-
-		assertEquals(GlobalErrorCode.INVALID_REQUEST, exception.errorCode());
-		assertEquals(0, commentRepositoryPort.deleteCallCount);
-	}
-
-	@Test
-	void rejectsMissingPost() {
-		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(new FakePostRepositoryPort(), commentRepositoryPort);
-
-		BusinessException exception = assertThrows(
-				BusinessException.class,
-				() -> service.deletePost(new DeletePostCommand(999L, 1L))
+				() -> service.deleteComment(new DeleteCommentCommand(1L, 10L, 3L))
 		);
 
 		assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.errorCode());
+		assertEquals(0, commentRepositoryPort.findCallCount);
 		assertEquals(0, commentRepositoryPort.deleteCallCount);
 	}
 
 	@Test
-	void rejectsAlreadyDeletedPost() {
-		FakePostRepositoryPort repositoryPort = new FakePostRepositoryPort();
-		repositoryPort.post = Optional.of(Post.rehydrate(
+	void rejectsMissingComment() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		postRepositoryPort.post = Optional.of(Post.rehydrate(
 				1L,
 				"title",
 				"content",
 				2L,
-				Instant.parse("2026-05-20T00:00:00Z"),
-				Instant.parse("2026-05-20T01:00:00Z")
+				Instant.parse("2026-05-20T00:00:00Z")
 		));
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(repositoryPort, commentRepositoryPort);
+		DeleteCommentService service = new DeleteCommentService(postRepositoryPort, commentRepositoryPort);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> service.deletePost(new DeletePostCommand(1L, 2L))
+				() -> service.deleteComment(new DeleteCommentCommand(1L, 10L, 3L))
 		);
 
-		assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.errorCode());
+		assertEquals(BoardErrorCode.COMMENT_NOT_FOUND, exception.errorCode());
+		assertEquals(1, commentRepositoryPort.findCallCount);
+		assertEquals(0, commentRepositoryPort.deleteCallCount);
+	}
+
+	@Test
+	void rejectsCommentFromOtherPost() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		postRepositoryPort.post = Optional.of(Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		));
+		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
+		commentRepositoryPort.comment = Optional.of(Comment.rehydrate(
+				10L,
+				2L,
+				3L,
+				"comment",
+				Instant.parse("2026-05-21T00:00:00Z")
+		));
+		DeleteCommentService service = new DeleteCommentService(postRepositoryPort, commentRepositoryPort);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> service.deleteComment(new DeleteCommentCommand(1L, 10L, 3L))
+		);
+
+		assertEquals(BoardErrorCode.COMMENT_NOT_FOUND, exception.errorCode());
 		assertEquals(0, commentRepositoryPort.deleteCallCount);
 	}
 
 	@Test
 	void rejectsNonAuthor() {
-		FakePostRepositoryPort repositoryPort = new FakePostRepositoryPort();
-		repositoryPort.post = Optional.of(Post.rehydrate(
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		postRepositoryPort.post = Optional.of(Post.rehydrate(
 				1L,
 				"title",
 				"content",
@@ -121,25 +140,30 @@ class DeletePostServiceTest {
 				Instant.parse("2026-05-20T00:00:00Z")
 		));
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
-		DeletePostService service = new DeletePostService(repositoryPort, commentRepositoryPort);
+		commentRepositoryPort.comment = Optional.of(Comment.rehydrate(
+				10L,
+				1L,
+				3L,
+				"comment",
+				Instant.parse("2026-05-21T00:00:00Z")
+		));
+		DeleteCommentService service = new DeleteCommentService(postRepositoryPort, commentRepositoryPort);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
-				() -> service.deletePost(new DeletePostCommand(1L, 3L))
+				() -> service.deleteComment(new DeleteCommentCommand(1L, 10L, 4L))
 		);
 
-		assertEquals(BoardErrorCode.POST_DELETE_FORBIDDEN, exception.errorCode());
+		assertEquals(BoardErrorCode.COMMENT_DELETE_FORBIDDEN, exception.errorCode());
 		assertEquals(0, commentRepositoryPort.deleteCallCount);
 	}
 
 	private static class FakePostRepositoryPort implements PostRepositoryPort {
 
 		private Optional<Post> post = Optional.empty();
-		private Post savedPost;
 
 		@Override
 		public Post save(Post post) {
-			savedPost = post;
 			return post;
 		}
 
@@ -156,7 +180,9 @@ class DeletePostServiceTest {
 
 	private static class FakeCommentRepositoryPort implements CommentRepositoryPort {
 
-		private Long deletedPostId;
+		private Optional<Comment> comment = Optional.empty();
+		private Long deletedCommentId;
+		private int findCallCount;
 		private int deleteCallCount;
 
 		@Override
@@ -166,7 +192,8 @@ class DeletePostServiceTest {
 
 		@Override
 		public Optional<Comment> findById(Long id) {
-			return Optional.empty();
+			findCallCount++;
+			return comment;
 		}
 
 		@Override
@@ -181,12 +208,12 @@ class DeletePostServiceTest {
 
 		@Override
 		public void deleteAllByPostId(Long postId) {
-			deletedPostId = postId;
-			deleteCallCount++;
 		}
 
 		@Override
 		public void deleteById(Long id) {
+			deletedCommentId = id;
+			deleteCallCount++;
 		}
 	}
 }
