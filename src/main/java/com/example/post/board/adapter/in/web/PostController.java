@@ -6,11 +6,15 @@ import com.example.post.board.application.port.in.CreatePostUseCase;
 import com.example.post.board.application.port.in.CreateCommentCommand;
 import com.example.post.board.application.port.in.CreateCommentResult;
 import com.example.post.board.application.port.in.CreateCommentUseCase;
+import com.example.post.board.application.port.in.CommentSummaryResult;
 import com.example.post.board.application.port.in.DeletePostCommand;
 import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
+import com.example.post.board.application.port.in.ListPostCommentsQuery;
+import com.example.post.board.application.port.in.ListPostCommentsResult;
+import com.example.post.board.application.port.in.ListPostCommentsUseCase;
 import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.in.ReadPostQuery;
 import com.example.post.board.application.port.in.ReadPostResult;
@@ -21,6 +25,7 @@ import com.example.post.global.web.ApiResponse;
 import com.example.post.global.web.swagger.CreateCommentApiDocs;
 import com.example.post.global.web.swagger.CreatePostApiDocs;
 import com.example.post.global.web.swagger.DeletePostApiDocs;
+import com.example.post.global.web.swagger.ListPostCommentsApiDocs;
 import com.example.post.global.web.swagger.ListPostsApiDocs;
 import com.example.post.global.web.swagger.ReadPostApiDocs;
 import com.example.post.member.exception.MemberErrorCode;
@@ -49,6 +54,7 @@ public class PostController {
 	private final CreateCommentUseCase createCommentUseCase;
 	private final ReadPostUseCase readPostUseCase;
 	private final ListPostsUseCase listPostsUseCase;
+	private final ListPostCommentsUseCase listPostCommentsUseCase;
 	private final DeletePostUseCase deletePostUseCase;
 
 	@PostMapping
@@ -107,8 +113,26 @@ public class PostController {
 						result.content(),
 						result.authorMemberId(),
 						result.author(),
-						result.createdAt()
+						result.createdAt(),
+						result.commentCount()
 				)
+		));
+	}
+
+	@GetMapping("/{postId}/comments")
+	@ListPostCommentsApiDocs
+	public ResponseEntity<ApiResponse<CommentPageResponse>> listPostComments(
+			@PathVariable Long postId,
+			@RequestParam(defaultValue = "0") Integer page,
+			@RequestParam(defaultValue = "10") Integer size
+	) {
+		ListPostCommentsResult result = listPostCommentsUseCase.listPostComments(
+				new ListPostCommentsQuery(postId, page, size)
+		);
+
+		return ResponseEntity.ok(ApiResponse.success(
+				"댓글 목록을 조회했습니다.",
+				toCommentPageResponse(result)
 		));
 	}
 
@@ -155,7 +179,32 @@ public class PostController {
 						post.title(),
 						post.authorMemberId(),
 						post.author(),
-						post.createdAt()
+						post.createdAt(),
+						post.commentCount()
+				))
+				.toList();
+	}
+
+	private static CommentPageResponse toCommentPageResponse(ListPostCommentsResult comments) {
+		return new CommentPageResponse(
+				toCommentSummaryResponses(comments.items()),
+				comments.page(),
+				comments.size(),
+				comments.totalElements(),
+				comments.totalPages(),
+				comments.first(),
+				comments.last()
+		);
+	}
+
+	private static List<CommentSummaryResponse> toCommentSummaryResponses(List<CommentSummaryResult> comments) {
+		return comments.stream()
+				.map(comment -> new CommentSummaryResponse(
+						comment.id(),
+						comment.authorMemberId(),
+						comment.author(),
+						comment.content(),
+						comment.createdAt()
 				))
 				.toList();
 	}

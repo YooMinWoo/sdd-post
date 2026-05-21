@@ -6,8 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.out.AuthorMemberPort;
+import com.example.post.board.application.port.out.CommentPageResult;
+import com.example.post.board.application.port.out.CommentRepositoryPort;
 import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.application.port.out.PostRepositoryPort;
+import com.example.post.board.domain.model.Comment;
 import com.example.post.board.domain.model.Post;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.GlobalErrorCode;
@@ -21,10 +24,12 @@ import org.junit.jupiter.api.Test;
 class ListPostsServiceTest {
 
 	@Test
-	void listsPostsWithCurrentAuthorNickname() {
-		FakePostRepositoryPort repositoryPort = new FakePostRepositoryPort();
+	void listsPostsWithCurrentAuthorNicknameAndCommentCount() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
 		FakeAuthorMemberPort authorMemberPort = new FakeAuthorMemberPort();
-		repositoryPort.pageResult = new PostPageResult(
+		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
+		commentRepositoryPort.commentCounts = Map.of(2L, 3L);
+		postRepositoryPort.pageResult = new PostPageResult(
 				List.of(
 						Post.rehydrate(2L, "second", "content 2", 1L, Instant.parse("2026-05-20T01:00:00Z")),
 						Post.rehydrate(1L, "first", "content 1", 1L, Instant.parse("2026-05-20T00:00:00Z"))
@@ -36,7 +41,7 @@ class ListPostsServiceTest {
 				true,
 				true
 		);
-		ListPostsService service = new ListPostsService(repositoryPort, authorMemberPort);
+		ListPostsService service = new ListPostsService(postRepositoryPort, authorMemberPort, commentRepositoryPort);
 
 		ListPostsResult result = service.listPosts(new ListPostsQuery(0, 10));
 
@@ -46,6 +51,8 @@ class ListPostsServiceTest {
 		assertEquals(1L, result.posts().get(0).authorMemberId());
 		assertEquals("minu", result.posts().get(0).author());
 		assertEquals(Instant.parse("2026-05-20T01:00:00Z"), result.posts().get(0).createdAt());
+		assertEquals(3L, result.posts().get(0).commentCount());
+		assertEquals(0L, result.posts().get(1).commentCount());
 		assertEquals(0, result.page());
 		assertEquals(10, result.size());
 		assertEquals(2, result.totalElements());
@@ -55,11 +62,34 @@ class ListPostsServiceTest {
 		assertEquals(1, authorMemberPort.batchLookupCount);
 		assertEquals(0, authorMemberPort.singleLookupCount);
 		assertEquals(Set.of(1L), authorMemberPort.requestedMemberIds);
+		assertEquals(1, commentRepositoryPort.countLookupCount);
+		assertEquals(Set.of(1L, 2L), commentRepositoryPort.requestedPostIds);
+	}
+
+	@Test
+	void returnsEmptyListWithoutAuthorOrCommentCountLookup() {
+		FakeAuthorMemberPort authorMemberPort = new FakeAuthorMemberPort();
+		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
+		ListPostsService service = new ListPostsService(
+				new FakePostRepositoryPort(),
+				authorMemberPort,
+				commentRepositoryPort
+		);
+
+		ListPostsResult result = service.listPosts(new ListPostsQuery(0, 10));
+
+		assertEquals(List.of(), result.posts());
+		assertEquals(0, authorMemberPort.batchLookupCount);
+		assertEquals(0, commentRepositoryPort.countLookupCount);
 	}
 
 	@Test
 	void rejectsNegativePage() {
-		ListPostsService service = new ListPostsService(new FakePostRepositoryPort(), new FakeAuthorMemberPort());
+		ListPostsService service = new ListPostsService(
+				new FakePostRepositoryPort(),
+				new FakeAuthorMemberPort(),
+				new FakeCommentRepositoryPort()
+		);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
@@ -71,7 +101,11 @@ class ListPostsServiceTest {
 
 	@Test
 	void rejectsTooLargeSize() {
-		ListPostsService service = new ListPostsService(new FakePostRepositoryPort(), new FakeAuthorMemberPort());
+		ListPostsService service = new ListPostsService(
+				new FakePostRepositoryPort(),
+				new FakeAuthorMemberPort(),
+				new FakeCommentRepositoryPort()
+		);
 
 		BusinessException exception = assertThrows(
 				BusinessException.class,
@@ -98,6 +132,30 @@ class ListPostsServiceTest {
 		@Override
 		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
 			return pageResult;
+		}
+	}
+
+	private static class FakeCommentRepositoryPort implements CommentRepositoryPort {
+
+		private Map<Long, Long> commentCounts = Map.of();
+		private Set<Long> requestedPostIds = Set.of();
+		private int countLookupCount;
+
+		@Override
+		public Comment save(Comment comment) {
+			return comment;
+		}
+
+		@Override
+		public CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size) {
+			return new CommentPageResult(List.of(), page, size, 0, 0, true, true);
+		}
+
+		@Override
+		public Map<Long, Long> countByPostIds(Set<Long> postIds) {
+			countLookupCount++;
+			requestedPostIds = Set.copyOf(postIds);
+			return commentCounts;
 		}
 	}
 

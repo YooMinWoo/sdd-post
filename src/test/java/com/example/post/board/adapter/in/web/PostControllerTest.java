@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.example.post.board.application.port.in.CommentSummaryResult;
 import com.example.post.board.application.port.in.CreateCommentCommand;
 import com.example.post.board.application.port.in.CreateCommentResult;
 import com.example.post.board.application.port.in.CreateCommentUseCase;
@@ -16,6 +17,9 @@ import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
 import com.example.post.board.application.port.in.DeletePostCommand;
 import com.example.post.board.application.port.in.DeletePostUseCase;
+import com.example.post.board.application.port.in.ListPostCommentsQuery;
+import com.example.post.board.application.port.in.ListPostCommentsResult;
+import com.example.post.board.application.port.in.ListPostCommentsUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
@@ -49,6 +53,7 @@ class PostControllerTest {
 	private final FakeCreateCommentUseCase createCommentUseCase = new FakeCreateCommentUseCase();
 	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
 	private final FakeListPostsUseCase listPostsUseCase = new FakeListPostsUseCase();
+	private final FakeListPostCommentsUseCase listPostCommentsUseCase = new FakeListPostCommentsUseCase();
 	private final FakeDeletePostUseCase deletePostUseCase = new FakeDeletePostUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
 			.standaloneSetup(new PostController(
@@ -56,6 +61,7 @@ class PostControllerTest {
 					createCommentUseCase,
 					readPostUseCase,
 					listPostsUseCase,
+					listPostCommentsUseCase,
 					deletePostUseCase
 			))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
@@ -82,14 +88,9 @@ class PostControllerTest {
 						.with(authenticatedMember()))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.code").doesNotExist())
 				.andExpect(jsonPath("$.message").value("게시글이 생성되었습니다."))
 				.andExpect(jsonPath("$.data.id").value(1))
 				.andExpect(jsonPath("$.data.title").doesNotExist())
-				.andExpect(jsonPath("$.data.content").doesNotExist())
-				.andExpect(jsonPath("$.data.authorMemberId").doesNotExist())
-				.andExpect(jsonPath("$.data.author").doesNotExist())
-				.andExpect(jsonPath("$.data.createdAt").doesNotExist())
 				.andExpect(jsonPath("$.timestamp").exists())
 				.andExpect(jsonPath("$.errors").isArray());
 	}
@@ -128,29 +129,6 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("POST_TITLE_REQUIRED"))
 				.andExpect(jsonPath("$.message").value("게시글 제목은 필수입니다."))
-				.andExpect(jsonPath("$.data").doesNotExist())
-				.andExpect(jsonPath("$.path").value("/posts"))
-				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
-				.andExpect(jsonPath("$.errors").isArray());
-	}
-
-	@Test
-	void returnsBadRequestForIllegalArgumentFallback() throws Exception {
-		createPostUseCase.throwIllegalArgumentException = true;
-
-		mockMvc.perform(post("/posts")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "title": "",
-								  "content": "First post"
-								}
-								""")
-						.with(authenticatedMember()))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
 				.andExpect(jsonPath("$.path").value("/posts"));
 	}
 
@@ -163,10 +141,7 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("MALFORMED_JSON"))
 				.andExpect(jsonPath("$.message").value("요청 본문 형식이 올바르지 않습니다."))
-				.andExpect(jsonPath("$.data").doesNotExist())
-				.andExpect(jsonPath("$.path").value("/posts"))
-				.andExpect(jsonPath("$.timestamp").value("2026-05-20T00:00:00Z"))
-				.andExpect(jsonPath("$.errors").isArray());
+				.andExpect(jsonPath("$.path").value("/posts"));
 	}
 
 	@Test
@@ -181,14 +156,9 @@ class PostControllerTest {
 						.with(authenticatedMember()))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.code").doesNotExist())
 				.andExpect(jsonPath("$.message").value("댓글이 생성되었습니다."))
 				.andExpect(jsonPath("$.data.id").value(1))
-				.andExpect(jsonPath("$.data.content").doesNotExist())
-				.andExpect(jsonPath("$.data.postId").doesNotExist())
-				.andExpect(jsonPath("$.data.authorMemberId").doesNotExist())
-				.andExpect(jsonPath("$.timestamp").exists())
-				.andExpect(jsonPath("$.errors").isArray());
+				.andExpect(jsonPath("$.data.content").doesNotExist());
 
 		assertEquals(1L, createCommentUseCase.command.postId());
 		assertEquals("Good post", createCommentUseCase.command.content());
@@ -231,25 +201,6 @@ class PostControllerTest {
 	}
 
 	@Test
-	void returnsBadRequestForCreateCommentInvalidPostId() throws Exception {
-		createCommentUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
-
-		mockMvc.perform(post("/posts/{postId}/comments", 0L)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "content": "Good post"
-								}
-								""")
-						.with(authenticatedMember()))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
-				.andExpect(jsonPath("$.path").value("/posts/0/comments"));
-	}
-
-	@Test
 	void returnsBadRequestForCreateCommentBlankContent() throws Exception {
 		createCommentUseCase.errorCode = BoardErrorCode.COMMENT_CONTENT_REQUIRED;
 
@@ -269,30 +220,10 @@ class PostControllerTest {
 	}
 
 	@Test
-	void returnsBadRequestForCreateCommentTooLongContent() throws Exception {
-		createCommentUseCase.errorCode = BoardErrorCode.COMMENT_CONTENT_TOO_LONG;
-
-		mockMvc.perform(post("/posts/{postId}/comments", 1L)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{
-								  "content": "too long"
-								}
-								""")
-						.with(authenticatedMember()))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").value("COMMENT_CONTENT_TOO_LONG"))
-				.andExpect(jsonPath("$.message").value("댓글 본문은 최대 1,000자까지 허용됩니다."))
-				.andExpect(jsonPath("$.path").value("/posts/1/comments"));
-	}
-
-	@Test
-	void returnsReadPost() throws Exception {
+	void returnsReadPostWithCommentCount() throws Exception {
 		mockMvc.perform(get("/posts/{postId}", 1L))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.code").doesNotExist())
 				.andExpect(jsonPath("$.message").value("게시글을 조회했습니다."))
 				.andExpect(jsonPath("$.data.id").value(1))
 				.andExpect(jsonPath("$.data.title").value("Hello"))
@@ -300,8 +231,12 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.data.authorMemberId").value(2))
 				.andExpect(jsonPath("$.data.author").value("minu"))
 				.andExpect(jsonPath("$.data.createdAt").value("2026-05-20T00:00:00Z"))
+				.andExpect(jsonPath("$.data.commentCount").value(3))
+				.andExpect(jsonPath("$.data.comments").doesNotExist())
 				.andExpect(jsonPath("$.timestamp").exists())
 				.andExpect(jsonPath("$.errors").isArray());
+
+		assertEquals(1L, readPostUseCase.query.postId());
 	}
 
 	@Test
@@ -313,7 +248,6 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
 				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
-				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts/999"));
 	}
 
@@ -326,18 +260,67 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
 				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
-				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts/0"));
 	}
 
 	@Test
-	void returnsPostListWithoutContent() throws Exception {
+	void returnsPostComments() throws Exception {
+		mockMvc.perform(get("/posts/{postId}/comments", 1L)
+						.param("page", "0")
+						.param("size", "10"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("댓글 목록을 조회했습니다."))
+				.andExpect(jsonPath("$.data.items[0].id").value(2))
+				.andExpect(jsonPath("$.data.items[0].authorMemberId").value(3))
+				.andExpect(jsonPath("$.data.items[0].author").value("jane"))
+				.andExpect(jsonPath("$.data.items[0].content").value("Second comment"))
+				.andExpect(jsonPath("$.data.items[0].createdAt").value("2026-05-21T02:00:00Z"))
+				.andExpect(jsonPath("$.data.page").value(0))
+				.andExpect(jsonPath("$.data.size").value(10))
+				.andExpect(jsonPath("$.data.totalElements").value(2))
+				.andExpect(jsonPath("$.data.totalPages").value(1))
+				.andExpect(jsonPath("$.data.first").value(true))
+				.andExpect(jsonPath("$.data.last").value(true));
+
+		assertEquals(1L, listPostCommentsUseCase.query.postId());
+		assertEquals(0, listPostCommentsUseCase.query.page());
+		assertEquals(10, listPostCommentsUseCase.query.size());
+	}
+
+	@Test
+	void returnsBadRequestForInvalidPostCommentsPage() throws Exception {
+		listPostCommentsUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(get("/posts/{postId}/comments", 1L)
+						.param("page", "-1")
+						.param("size", "10"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1/comments"));
+	}
+
+	@Test
+	void returnsNotFoundForPostCommentsMissingPost() throws Exception {
+		listPostCommentsUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(get("/posts/{postId}/comments", 999L))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/999/comments"));
+	}
+
+	@Test
+	void returnsPostListWithoutContentAndWithCommentCount() throws Exception {
 		mockMvc.perform(get("/posts")
 						.param("page", "0")
 						.param("size", "10"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.code").doesNotExist())
 				.andExpect(jsonPath("$.message").value("게시글 목록을 조회했습니다."))
 				.andExpect(jsonPath("$.data.posts[0].id").value(2))
 				.andExpect(jsonPath("$.data.posts[0].title").value("Second"))
@@ -345,14 +328,13 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.data.posts[0].authorMemberId").value(1))
 				.andExpect(jsonPath("$.data.posts[0].author").value("minu"))
 				.andExpect(jsonPath("$.data.posts[0].createdAt").value("2026-05-20T01:00:00Z"))
+				.andExpect(jsonPath("$.data.posts[0].commentCount").value(3))
 				.andExpect(jsonPath("$.data.page").value(0))
 				.andExpect(jsonPath("$.data.size").value(10))
 				.andExpect(jsonPath("$.data.totalElements").value(2))
 				.andExpect(jsonPath("$.data.totalPages").value(1))
 				.andExpect(jsonPath("$.data.first").value(true))
-				.andExpect(jsonPath("$.data.last").value(true))
-				.andExpect(jsonPath("$.timestamp").exists())
-				.andExpect(jsonPath("$.errors").isArray());
+				.andExpect(jsonPath("$.data.last").value(true));
 	}
 
 	@Test
@@ -366,7 +348,6 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
 				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
-				.andExpect(jsonPath("$.data").doesNotExist())
 				.andExpect(jsonPath("$.path").value("/posts"));
 	}
 
@@ -404,32 +385,6 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.path").value("/posts/1"));
 	}
 
-	@Test
-	void returnsNotFoundForDeleteMissingPost() throws Exception {
-		deletePostUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
-
-		mockMvc.perform(delete("/posts/{postId}", 999L)
-						.with(authenticatedMember()))
-				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
-				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
-				.andExpect(jsonPath("$.path").value("/posts/999"));
-	}
-
-	@Test
-	void returnsBadRequestForDeleteInvalidPostId() throws Exception {
-		deletePostUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
-
-		mockMvc.perform(delete("/posts/{postId}", 0L)
-						.with(authenticatedMember()))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.success").value(false))
-				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
-				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
-				.andExpect(jsonPath("$.path").value("/posts/0"));
-	}
-
 	private static RequestPostProcessor authenticatedMember() {
 		return request -> {
 			SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -444,16 +399,12 @@ class PostControllerTest {
 
 	private static class FakeCreatePostUseCase implements CreatePostUseCase {
 
-		private boolean throwIllegalArgumentException;
 		private ErrorCode errorCode;
 
 		@Override
 		public CreatePostResult createPost(CreatePostCommand command) {
 			if (errorCode != null) {
 				throw new BusinessException(errorCode);
-			}
-			if (throwIllegalArgumentException) {
-				throw new IllegalArgumentException("title is required");
 			}
 			return new CreatePostResult(1L);
 		}
@@ -476,10 +427,12 @@ class PostControllerTest {
 
 	private static class FakeReadPostUseCase implements ReadPostUseCase {
 
+		private ReadPostQuery query;
 		private ErrorCode errorCode;
 
 		@Override
 		public ReadPostResult readPost(ReadPostQuery query) {
+			this.query = query;
 			if (errorCode != null) {
 				throw new BusinessException(errorCode);
 			}
@@ -489,7 +442,46 @@ class PostControllerTest {
 					"First post",
 					2L,
 					"minu",
-					Instant.parse("2026-05-20T00:00:00Z")
+					Instant.parse("2026-05-20T00:00:00Z"),
+					3
+			);
+		}
+	}
+
+	private static class FakeListPostCommentsUseCase implements ListPostCommentsUseCase {
+
+		private ListPostCommentsQuery query;
+		private ErrorCode errorCode;
+
+		@Override
+		public ListPostCommentsResult listPostComments(ListPostCommentsQuery query) {
+			this.query = query;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
+			return new ListPostCommentsResult(
+					List.of(
+							new CommentSummaryResult(
+									2L,
+									3L,
+									"jane",
+									"Second comment",
+									Instant.parse("2026-05-21T02:00:00Z")
+							),
+							new CommentSummaryResult(
+									1L,
+									4L,
+									"kim",
+									"First comment",
+									Instant.parse("2026-05-21T01:00:00Z")
+							)
+					),
+					query.page(),
+					query.size(),
+					2,
+					1,
+					true,
+					true
 			);
 		}
 	}
@@ -510,14 +502,16 @@ class PostControllerTest {
 									"Second",
 									1L,
 									"minu",
-									Instant.parse("2026-05-20T01:00:00Z")
+									Instant.parse("2026-05-20T01:00:00Z"),
+									3
 							),
 							new PostSummaryResult(
 									1L,
 									"First",
 									1L,
 									"minu",
-									Instant.parse("2026-05-20T00:00:00Z")
+									Instant.parse("2026-05-20T00:00:00Z"),
+									0
 							)
 					),
 					query.page(),

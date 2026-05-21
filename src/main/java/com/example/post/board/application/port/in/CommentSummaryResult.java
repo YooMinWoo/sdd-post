@@ -2,12 +2,11 @@ package com.example.post.board.application.port.in;
 
 import java.time.Instant;
 
-public record PostSummaryResult(
+public record CommentSummaryResult(
 		Long id,
-		String title,
 		Long authorMemberId,
 		String author,
-		Instant createdAt,
-		long commentCount
+		String content,
+		Instant createdAt
 ) {
 }

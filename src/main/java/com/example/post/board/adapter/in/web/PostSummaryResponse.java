@@ -18,6 +18,9 @@ public record PostSummaryResponse(
 		String author,
 
 		@Schema(description = "게시글 생성 시각", example = "2026-05-20T00:00:00Z")
-		Instant createdAt
+		Instant createdAt,
+
+		@Schema(description = "게시글에 작성된 전체 댓글 수", example = "3")
+		long commentCount
 ) {
 }

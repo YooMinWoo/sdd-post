@@ -13,7 +13,7 @@ import org.springframework.http.MediaType;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Operation(summary = "게시글 상세 조회", description = "게시글 식별자로 게시글 1건을 조회합니다.")
+@Operation(summary = "게시글 상세 조회", description = "게시글 식별자로 게시글 1건과 댓글 수를 조회합니다.")
 @ApiResponses({
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(
 				responseCode = "200",

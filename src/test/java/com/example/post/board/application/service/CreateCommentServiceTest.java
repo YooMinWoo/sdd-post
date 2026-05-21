@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.example.post.board.application.port.in.CreateCommentCommand;
 import com.example.post.board.application.port.in.CreateCommentResult;
+import com.example.post.board.application.port.out.CommentPageResult;
 import com.example.post.board.application.port.out.CommentRepositoryPort;
 import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.application.port.out.PostRepositoryPort;
@@ -15,7 +16,9 @@ import com.example.post.global.exception.BusinessException;
 import com.example.post.global.exception.GlobalErrorCode;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class CreateCommentServiceTest {
@@ -181,6 +184,16 @@ class CreateCommentServiceTest {
 					comment.getContent(),
 					comment.getCreatedAt()
 			);
+		}
+
+		@Override
+		public CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size) {
+			return new CommentPageResult(List.of(), page, size, 0, 0, true, true);
+		}
+
+		@Override
+		public Map<Long, Long> countByPostIds(Set<Long> postIds) {
+			return Map.of();
 		}
 	}
 }
