@@ -15,11 +15,11 @@ public class Member {
 	private static final int MAX_NICKNAME_LENGTH = 50;
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
-	private final Long id;
-	private final String email;
-	private final String passwordHash;
-	private final String nickname;
-	private final Instant createdAt;
+	private Long id;
+	private String email;
+	private String passwordHash;
+	private String nickname;
+	private Instant createdAt;
 
 	private Member(Long id, String email, String passwordHash, String nickname, Instant createdAt) {
 		this.id = id;

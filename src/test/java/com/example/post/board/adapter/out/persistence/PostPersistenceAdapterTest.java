@@ -2,6 +2,7 @@ package com.example.post.board.adapter.out.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.example.post.board.application.port.out.PostPageResult;
@@ -29,6 +30,7 @@ class PostPersistenceAdapterTest {
 		assertEquals("content", savedPost.getContent());
 		assertEquals(1L, savedPost.getAuthorMemberId());
 		assertEquals(Instant.parse("2026-05-20T00:00:00Z"), savedPost.getCreatedAt());
+		assertNull(savedPost.getDeletedAt());
 	}
 
 	@Test
@@ -51,6 +53,18 @@ class PostPersistenceAdapterTest {
 	}
 
 	@Test
+	void savesDeletedAtAndExcludesDeletedPostFromFindById() {
+		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
+		Post savedPost = adapter.save(Post.create("title", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
+
+		savedPost.deleteBy(1L, Instant.parse("2026-05-20T01:00:00Z"));
+		Post deletedPost = adapter.save(savedPost);
+
+		assertEquals(Instant.parse("2026-05-20T01:00:00Z"), deletedPost.getDeletedAt());
+		assertTrue(adapter.findById(savedPost.getId()).isEmpty());
+	}
+
+	@Test
 	void findsPostsByPageOrderByCreatedAtDesc() {
 		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
 		adapter.save(Post.create("old", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
@@ -67,5 +81,20 @@ class PostPersistenceAdapterTest {
 		assertEquals(1, result.totalPages());
 		assertTrue(result.first());
 		assertTrue(result.last());
+	}
+
+	@Test
+	void excludesDeletedPostsFromPage() {
+		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
+		Post deletedPost = adapter.save(Post.create("deleted", "content", 1L, Instant.parse("2026-05-20T01:00:00Z")));
+		deletedPost.deleteBy(1L, Instant.parse("2026-05-20T02:00:00Z"));
+		adapter.save(deletedPost);
+		adapter.save(Post.create("visible", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
+
+		PostPageResult result = adapter.findAllOrderByCreatedAtDesc(0, 10);
+
+		assertEquals(1, result.posts().size());
+		assertEquals("visible", result.posts().get(0).getTitle());
+		assertEquals(1, result.totalElements());
 	}
 }

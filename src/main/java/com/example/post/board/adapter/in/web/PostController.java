@@ -3,6 +3,11 @@ package com.example.post.board.adapter.in.web;
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.CreateCommentCommand;
+import com.example.post.board.application.port.in.CreateCommentResult;
+import com.example.post.board.application.port.in.CreateCommentUseCase;
+import com.example.post.board.application.port.in.DeletePostCommand;
+import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
@@ -13,7 +18,9 @@ import com.example.post.board.application.port.in.ReadPostUseCase;
 import com.example.post.global.exception.BusinessException;
 import com.example.post.global.security.AuthenticatedMemberPrincipal;
 import com.example.post.global.web.ApiResponse;
+import com.example.post.global.web.swagger.CreateCommentApiDocs;
 import com.example.post.global.web.swagger.CreatePostApiDocs;
+import com.example.post.global.web.swagger.DeletePostApiDocs;
 import com.example.post.global.web.swagger.ListPostsApiDocs;
 import com.example.post.global.web.swagger.ReadPostApiDocs;
 import com.example.post.member.exception.MemberErrorCode;
@@ -23,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,12 +42,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/posts")
 @RequiredArgsConstructor
-@Tag(name = "게시글", description = "게시글 작성 API")
+@Tag(name = "게시글", description = "게시글과 댓글 API")
 public class PostController {
 
 	private final CreatePostUseCase createPostUseCase;
+	private final CreateCommentUseCase createCommentUseCase;
 	private final ReadPostUseCase readPostUseCase;
 	private final ListPostsUseCase listPostsUseCase;
+	private final DeletePostUseCase deletePostUseCase;
 
 	@PostMapping
 	@CreatePostApiDocs
@@ -60,6 +70,27 @@ public class PostController {
 						new CreatePostResponse(
 								result.id()
 						)
+				));
+	}
+
+	@PostMapping("/{postId}/comments")
+	@CreateCommentApiDocs
+	public ResponseEntity<ApiResponse<CreateCommentResponse>> createComment(
+			@PathVariable Long postId,
+			@RequestBody CreateCommentRequest request,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		CreateCommentResult result = createCommentUseCase.createComment(
+				new CreateCommentCommand(postId, request.content(), principal.id())
+		);
+
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(ApiResponse.success(
+						"댓글이 생성되었습니다.",
+						new CreateCommentResponse(result.id())
 				));
 	}
 
@@ -101,6 +132,20 @@ public class PostController {
 						result.last()
 				)
 		));
+	}
+
+	@DeleteMapping("/{postId}")
+	@DeletePostApiDocs
+	public ResponseEntity<Void> deletePost(
+			@PathVariable Long postId,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		deletePostUseCase.deletePost(new DeletePostCommand(postId, principal.id()));
+
+		return ResponseEntity.noContent().build();
 	}
 
 	private static List<PostSummaryResponse> toPostSummaryResponses(List<PostSummaryResult> posts) {

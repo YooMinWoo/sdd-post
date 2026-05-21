@@ -23,7 +23,7 @@
 | 토큰 재발급 | Token Refresh | 유효한 refreshToken으로 새로운 accessToken과 refreshToken을 발급받는 행위 |
 | 로그아웃 | Logout | Redis에 저장된 refreshToken을 삭제해 이후 재발급을 막는 행위 |
 | Redis 토큰 저장소 | Redis Token Store | refreshToken을 저장하고 만료 시간을 관리하는 외부 저장소 |
-| 댓글 | Comment | 게시글에 대해 작성하는 하위 의견 |
+| 댓글 | Comment | 게시글에 대해 작성하는 일반 하위 의견이며, v1 댓글 작성 범위에서는 대댓글을 포함하지 않는다 |
 | 첨부파일 | Attachment | 게시글 또는 댓글에 연결되는 파일 |
 | 조회수 | View Count | 게시글이 조회된 횟수 |
 | 좋아요 | Like | 사용자가 게시글에 긍정 반응을 남기는 행위 |
@@ -42,5 +42,5 @@
 
 - 게시판 분류 정책
 - 게시글 공개 범위
-- 댓글과 대댓글 지원 여부
+- 대댓글 지원 정책
 - 첨부파일 정책
