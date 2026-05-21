@@ -41,3 +41,4 @@
 - [010-post-list](../specs/010-post-list/spec.md): 게시글 최신순 페이징 목록 조회
 - [011-post-delete](../specs/011-post-delete/spec.md): 작성자 본인 게시글 소프트 삭제
 - [012-comment-create](../specs/012-comment-create/spec.md): 로그인 회원의 댓글 작성
+- [013-post-comments-read](../specs/013-post-comments-read/spec.md): 게시글 댓글 페이지 분리 조회와 댓글 수 제공

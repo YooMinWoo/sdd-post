@@ -28,6 +28,7 @@ public class SecurityConfig {
 						.requestMatchers("/auth/signup", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
 						.requestMatchers(HttpMethod.GET, "/posts").permitAll()
 						.requestMatchers(HttpMethod.GET, "/posts/*").permitAll()
+						.requestMatchers(HttpMethod.GET, "/posts/*/comments").permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 						.anyRequest().authenticated()
 				)

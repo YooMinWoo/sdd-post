@@ -13,11 +13,11 @@ import org.springframework.http.MediaType;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Operation(summary = "게시글 목록 조회", description = "게시글 목록을 생성 시각 기준 최신순으로 페이징 조회하고 댓글 수를 제공합니다.")
+@Operation(summary = "게시글 댓글 목록 조회", description = "게시글에 작성된 댓글을 생성 시각 기준 최신순으로 페이징 조회합니다.")
 @ApiResponses({
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(
 				responseCode = "200",
-				description = "게시글 목록 조회 성공",
+				description = "게시글 댓글 목록 조회 성공",
 				content = @Content(
 						mediaType = MediaType.APPLICATION_JSON_VALUE,
 						schema = @Schema(implementation = ApiResponse.class)
@@ -30,7 +30,15 @@ import org.springframework.http.MediaType;
 						mediaType = MediaType.APPLICATION_JSON_VALUE,
 						schema = @Schema(implementation = ApiResponse.class)
 				)
+		),
+		@io.swagger.v3.oas.annotations.responses.ApiResponse(
+				responseCode = "404",
+				description = "게시글 없음",
+				content = @Content(
+						mediaType = MediaType.APPLICATION_JSON_VALUE,
+						schema = @Schema(implementation = ApiResponse.class)
+				)
 		)
 })
-public @interface ListPostsApiDocs {
+public @interface ListPostCommentsApiDocs {
 }

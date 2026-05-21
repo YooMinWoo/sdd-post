@@ -5,6 +5,7 @@ import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
 import com.example.post.board.application.port.in.PostSummaryResult;
 import com.example.post.board.application.port.out.AuthorMemberPort;
+import com.example.post.board.application.port.out.CommentRepositoryPort;
 import com.example.post.board.application.port.out.PostPageResult;
 import com.example.post.board.application.port.out.PostRepositoryPort;
 import com.example.post.board.domain.model.Post;
@@ -24,10 +25,16 @@ public class ListPostsService implements ListPostsUseCase {
 
 	private final PostRepositoryPort postRepositoryPort;
 	private final AuthorMemberPort authorMemberPort;
+	private final CommentRepositoryPort commentRepositoryPort;
 
-	public ListPostsService(PostRepositoryPort postRepositoryPort, AuthorMemberPort authorMemberPort) {
+	public ListPostsService(
+			PostRepositoryPort postRepositoryPort,
+			AuthorMemberPort authorMemberPort,
+			CommentRepositoryPort commentRepositoryPort
+	) {
 		this.postRepositoryPort = postRepositoryPort;
 		this.authorMemberPort = authorMemberPort;
+		this.commentRepositoryPort = commentRepositoryPort;
 	}
 
 	@Override
@@ -37,8 +44,9 @@ public class ListPostsService implements ListPostsUseCase {
 		int size = validateSize(query.size());
 		PostPageResult result = postRepositoryPort.findAllOrderByCreatedAtDesc(page, size);
 		Map<Long, String> authors = getAuthorsById(result.posts());
+		Map<Long, Long> commentCounts = getCommentCountsByPostId(result.posts());
 		List<PostSummaryResult> posts = result.posts().stream()
-				.map(post -> toSummaryResult(post, authors))
+				.map(post -> toSummaryResult(post, authors, commentCounts))
 				.toList();
 
 		return new ListPostsResult(
@@ -52,6 +60,16 @@ public class ListPostsService implements ListPostsUseCase {
 		);
 	}
 
+	private Map<Long, Long> getCommentCountsByPostId(List<Post> posts) {
+		Set<Long> postIds = posts.stream()
+				.map(Post::getId)
+				.collect(Collectors.toSet());
+		if (postIds.isEmpty()) {
+			return Map.of();
+		}
+		return commentRepositoryPort.countByPostIds(postIds);
+	}
+
 	private Map<Long, String> getAuthorsById(List<Post> posts) {
 		Set<Long> authorMemberIds = posts.stream()
 				.map(Post::getAuthorMemberId)
@@ -62,7 +80,11 @@ public class ListPostsService implements ListPostsUseCase {
 		return authorMemberPort.getNicknamesByIds(authorMemberIds);
 	}
 
-	private static PostSummaryResult toSummaryResult(Post post, Map<Long, String> authors) {
+	private static PostSummaryResult toSummaryResult(
+			Post post,
+			Map<Long, String> authors,
+			Map<Long, Long> commentCounts
+	) {
 		String author = authors.get(post.getAuthorMemberId());
 		if (author == null) {
 			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
@@ -72,7 +94,8 @@ public class ListPostsService implements ListPostsUseCase {
 				post.getTitle(),
 				post.getAuthorMemberId(),
 				author,
-				post.getCreatedAt()
+				post.getCreatedAt(),
+				commentCounts.getOrDefault(post.getId(), 0L)
 		);
 	}
 

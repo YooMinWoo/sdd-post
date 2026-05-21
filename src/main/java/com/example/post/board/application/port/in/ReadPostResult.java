@@ -8,6 +8,7 @@ public record ReadPostResult(
 		String content,
 		Long authorMemberId,
 		String author,
-		Instant createdAt
+		Instant createdAt,
+		long commentCount
 ) {
 }
