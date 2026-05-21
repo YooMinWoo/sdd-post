@@ -11,4 +11,6 @@ public interface CommentRepositoryPort {
 	CommentPageResult findAllByPostIdOrderByCreatedAtDesc(Long postId, int page, int size);
 
 	Map<Long, Long> countByPostIds(Set<Long> postIds);
+
+	void deleteAllByPostId(Long postId);
 }

@@ -153,6 +153,10 @@ class ReadPostServiceTest {
 			countLookupCount++;
 			return commentCounts;
 		}
+
+		@Override
+		public void deleteAllByPostId(Long postId) {
+		}
 	}
 
 	private static class FakeAuthorMemberPort implements AuthorMemberPort {

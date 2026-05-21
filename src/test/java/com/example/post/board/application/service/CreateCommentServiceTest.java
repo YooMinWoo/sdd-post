@@ -195,5 +195,9 @@ class CreateCommentServiceTest {
 		public Map<Long, Long> countByPostIds(Set<Long> postIds) {
 			return Map.of();
 		}
+
+		@Override
+		public void deleteAllByPostId(Long postId) {
+		}
 	}
 }

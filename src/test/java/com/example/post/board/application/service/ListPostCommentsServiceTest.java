@@ -202,6 +202,10 @@ class ListPostCommentsServiceTest {
 		public Map<Long, Long> countByPostIds(Set<Long> postIds) {
 			return Map.of();
 		}
+
+		@Override
+		public void deleteAllByPostId(Long postId) {
+		}
 	}
 
 	private static class FakeAuthorMemberPort implements AuthorMemberPort {

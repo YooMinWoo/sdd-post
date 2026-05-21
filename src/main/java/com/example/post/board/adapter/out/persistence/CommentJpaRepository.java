@@ -5,6 +5,7 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,4 +20,8 @@ interface CommentJpaRepository extends JpaRepository<CommentJpaEntity, Long> {
 			group by c.postId
 			""")
 	List<CommentCountProjection> countByPostIdInGroupByPostId(@Param("postIds") Set<Long> postIds);
+
+	@Modifying
+	@Query("delete from CommentJpaEntity c where c.postId = :postId")
+	void deleteByPostId(@Param("postId") Long postId);
 }

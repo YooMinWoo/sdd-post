@@ -2,6 +2,7 @@ package com.example.post.board.application.service;
 
 import com.example.post.board.application.port.in.DeletePostCommand;
 import com.example.post.board.application.port.in.DeletePostUseCase;
+import com.example.post.board.application.port.out.CommentRepositoryPort;
 import com.example.post.board.application.port.out.PostRepositoryPort;
 import com.example.post.board.domain.model.Post;
 import com.example.post.board.exception.BoardErrorCode;
@@ -15,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeletePostService implements DeletePostUseCase {
 
 	private final PostRepositoryPort postRepositoryPort;
+	private final CommentRepositoryPort commentRepositoryPort;
 
-	public DeletePostService(PostRepositoryPort postRepositoryPort) {
+	public DeletePostService(PostRepositoryPort postRepositoryPort, CommentRepositoryPort commentRepositoryPort) {
 		this.postRepositoryPort = postRepositoryPort;
+		this.commentRepositoryPort = commentRepositoryPort;
 	}
 
 	@Override
@@ -29,6 +32,7 @@ public class DeletePostService implements DeletePostUseCase {
 				.orElseThrow(() -> new BusinessException(BoardErrorCode.POST_NOT_FOUND));
 
 		post.deleteBy(requesterMemberId, Instant.now());
+		commentRepositoryPort.deleteAllByPostId(postId);
 		postRepositoryPort.save(post);
 	}
 

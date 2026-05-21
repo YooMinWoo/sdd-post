@@ -54,4 +54,9 @@ public class CommentPersistenceAdapter implements CommentRepositoryPort {
 						CommentCountProjection::getCommentCount
 				));
 	}
+
+	@Override
+	public void deleteAllByPostId(Long postId) {
+		commentJpaRepository.deleteByPostId(postId);
+	}
 }

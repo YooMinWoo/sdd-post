@@ -65,4 +65,23 @@ class CommentPersistenceAdapterTest {
 		assertEquals(1L, counts.get(2L));
 		assertEquals(false, counts.containsKey(3L));
 	}
+
+	@Test
+	void deletesCommentsByPostIdOnly() {
+		CommentPersistenceAdapter adapter = new CommentPersistenceAdapter(commentJpaRepository);
+		adapter.save(Comment.create(1L, 2L, "one", Instant.parse("2026-05-21T01:00:00Z")));
+		adapter.save(Comment.create(1L, 3L, "two", Instant.parse("2026-05-21T02:00:00Z")));
+		adapter.save(Comment.create(2L, 4L, "three", Instant.parse("2026-05-21T03:00:00Z")));
+
+		adapter.deleteAllByPostId(1L);
+
+		CommentPageResult deletedPostComments = adapter.findAllByPostIdOrderByCreatedAtDesc(1L, 0, 10);
+		CommentPageResult otherPostComments = adapter.findAllByPostIdOrderByCreatedAtDesc(2L, 0, 10);
+		Map<Long, Long> counts = adapter.countByPostIds(Set.of(1L, 2L));
+		assertEquals(0, deletedPostComments.comments().size());
+		assertEquals(1, otherPostComments.comments().size());
+		assertEquals("three", otherPostComments.comments().get(0).getContent());
+		assertEquals(false, counts.containsKey(1L));
+		assertEquals(1L, counts.get(2L));
+	}
 }
