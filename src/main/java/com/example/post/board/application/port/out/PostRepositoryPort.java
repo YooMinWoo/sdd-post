@@ -10,4 +10,6 @@ public interface PostRepositoryPort {
 	Optional<Post> findById(Long id);
 
 	PostPageResult findAllOrderByCreatedAtDesc(int page, int size);
+
+	PostPageResult searchByKeywordOrderByCreatedAtDesc(String keyword, int page, int size);
 }

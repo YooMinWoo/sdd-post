@@ -110,4 +110,22 @@ class PostPersistenceAdapterTest {
 		assertEquals("visible", result.posts().get(0).getTitle());
 		assertEquals(1, result.totalElements());
 	}
+
+	@Test
+	void searchesPostsByTitleOrContentIgnoringCaseAndExcludesDeletedPosts() {
+		PostPersistenceAdapter adapter = new PostPersistenceAdapter(postJpaRepository);
+		adapter.save(Post.create("Spring title", "content", 1L, Instant.parse("2026-05-20T00:00:00Z")));
+		adapter.save(Post.create("other", "SPRING content", 1L, Instant.parse("2026-05-20T01:00:00Z")));
+		adapter.save(Post.create("miss", "content", 1L, Instant.parse("2026-05-20T02:00:00Z")));
+		Post deletedPost = adapter.save(Post.create("spring deleted", "content", 1L, Instant.parse("2026-05-20T03:00:00Z")));
+		deletedPost.deleteBy(1L, Instant.parse("2026-05-20T04:00:00Z"));
+		adapter.save(deletedPost);
+
+		PostPageResult result = adapter.searchByKeywordOrderByCreatedAtDesc("spring", 0, 10);
+
+		assertEquals(2, result.posts().size());
+		assertEquals("other", result.posts().get(0).getTitle());
+		assertEquals("Spring title", result.posts().get(1).getTitle());
+		assertEquals(2, result.totalElements());
+	}
 }

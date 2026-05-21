@@ -42,7 +42,10 @@ public class ListPostsService implements ListPostsUseCase {
 	public ListPostsResult listPosts(ListPostsQuery query) {
 		int page = validatePage(query.page());
 		int size = validateSize(query.size());
-		PostPageResult result = postRepositoryPort.findAllOrderByCreatedAtDesc(page, size);
+		String keyword = normalizeKeyword(query.keyword());
+		PostPageResult result = keyword == null
+				? postRepositoryPort.findAllOrderByCreatedAtDesc(page, size)
+				: postRepositoryPort.searchByKeywordOrderByCreatedAtDesc(keyword, page, size);
 		Map<Long, String> authors = getAuthorsById(result.posts());
 		Map<Long, Long> commentCounts = getCommentCountsByPostId(result.posts());
 		List<PostSummaryResult> posts = result.posts().stream()
@@ -111,5 +114,16 @@ public class ListPostsService implements ListPostsUseCase {
 			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
 		}
 		return size;
+	}
+
+	private static String normalizeKeyword(String keyword) {
+		if (keyword == null) {
+			return null;
+		}
+		String normalized = keyword.trim();
+		if (normalized.isBlank()) {
+			return null;
+		}
+		return normalized;
 	}
 }

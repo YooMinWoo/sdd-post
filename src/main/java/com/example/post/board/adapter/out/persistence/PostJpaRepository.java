@@ -10,4 +10,10 @@ interface PostJpaRepository extends JpaRepository<PostJpaEntity, Long> {
 	Optional<PostJpaEntity> findByIdAndDeletedAtIsNull(Long id);
 
 	Page<PostJpaEntity> findAllByDeletedAtIsNullOrderByCreatedAtDesc(Pageable pageable);
+
+	Page<PostJpaEntity> findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrDeletedAtIsNullAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
+			String titleKeyword,
+			String contentKeyword,
+			Pageable pageable
+	);
 }

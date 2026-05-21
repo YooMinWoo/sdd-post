@@ -333,7 +333,8 @@ class PostControllerTest {
 	void returnsPostListWithoutContentAndWithCommentCount() throws Exception {
 		mockMvc.perform(get("/posts")
 						.param("page", "0")
-						.param("size", "10"))
+						.param("size", "10")
+						.param("keyword", "spring"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.message").value("게시글 목록을 조회했습니다."))
@@ -350,6 +351,8 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.data.totalPages").value(1))
 				.andExpect(jsonPath("$.data.first").value(true))
 				.andExpect(jsonPath("$.data.last").value(true));
+
+		assertEquals("spring", listPostsUseCase.query.keyword());
 	}
 
 	@Test
@@ -780,10 +783,12 @@ class PostControllerTest {
 
 	private static class FakeListPostsUseCase implements ListPostsUseCase {
 
+		private ListPostsQuery query;
 		private ErrorCode errorCode;
 
 		@Override
 		public ListPostsResult listPosts(ListPostsQuery query) {
+			this.query = query;
 			if (errorCode != null) {
 				throw new BusinessException(errorCode);
 			}

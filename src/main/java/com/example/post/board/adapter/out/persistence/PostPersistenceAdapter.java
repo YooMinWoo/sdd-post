@@ -33,6 +33,21 @@ public class PostPersistenceAdapter implements PostRepositoryPort {
 		Page<PostJpaEntity> result = postJpaRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc(
 				PageRequest.of(page, size)
 		);
+		return toPageResult(result);
+	}
+
+	@Override
+	public PostPageResult searchByKeywordOrderByCreatedAtDesc(String keyword, int page, int size) {
+		Page<PostJpaEntity> result = postJpaRepository
+				.findAllByDeletedAtIsNullAndTitleContainingIgnoreCaseOrDeletedAtIsNullAndContentContainingIgnoreCaseOrderByCreatedAtDesc(
+						keyword,
+						keyword,
+						PageRequest.of(page, size)
+				);
+		return toPageResult(result);
+	}
+
+	private static PostPageResult toPageResult(Page<PostJpaEntity> result) {
 		return new PostPageResult(
 				result.getContent().stream()
 						.map(PostJpaEntity::toDomain)

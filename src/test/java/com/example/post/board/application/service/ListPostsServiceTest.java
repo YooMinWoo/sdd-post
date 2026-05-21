@@ -67,6 +67,53 @@ class ListPostsServiceTest {
 	}
 
 	@Test
+	void searchesPostsWithKeywordAndCommentCount() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
+		commentRepositoryPort.commentCounts = Map.of(2L, 1L);
+		postRepositoryPort.searchResult = new PostPageResult(
+				List.of(
+						Post.rehydrate(2L, "spring", "content", 1L, Instant.parse("2026-05-20T01:00:00Z"))
+				),
+				0,
+				10,
+				1,
+				1,
+				true,
+				true
+		);
+		ListPostsService service = new ListPostsService(
+				postRepositoryPort,
+				new FakeAuthorMemberPort(),
+				commentRepositoryPort
+		);
+
+		ListPostsResult result = service.listPosts(new ListPostsQuery(0, 10, " spring "));
+
+		assertEquals(1, result.posts().size());
+		assertEquals("spring", result.posts().get(0).title());
+		assertEquals(1L, result.posts().get(0).commentCount());
+		assertEquals(0, postRepositoryPort.listLookupCount);
+		assertEquals(1, postRepositoryPort.searchLookupCount);
+		assertEquals("spring", postRepositoryPort.requestedKeyword);
+	}
+
+	@Test
+	void treatsBlankKeywordAsNormalList() {
+		FakePostRepositoryPort postRepositoryPort = new FakePostRepositoryPort();
+		ListPostsService service = new ListPostsService(
+				postRepositoryPort,
+				new FakeAuthorMemberPort(),
+				new FakeCommentRepositoryPort()
+		);
+
+		service.listPosts(new ListPostsQuery(0, 10, " "));
+
+		assertEquals(1, postRepositoryPort.listLookupCount);
+		assertEquals(0, postRepositoryPort.searchLookupCount);
+	}
+
+	@Test
 	void returnsEmptyListWithoutAuthorOrCommentCountLookup() {
 		FakeAuthorMemberPort authorMemberPort = new FakeAuthorMemberPort();
 		FakeCommentRepositoryPort commentRepositoryPort = new FakeCommentRepositoryPort();
@@ -118,6 +165,10 @@ class ListPostsServiceTest {
 	private static class FakePostRepositoryPort implements PostRepositoryPort {
 
 		private PostPageResult pageResult = new PostPageResult(List.of(), 0, 10, 0, 0, true, true);
+		private PostPageResult searchResult = new PostPageResult(List.of(), 0, 10, 0, 0, true, true);
+		private String requestedKeyword;
+		private int listLookupCount;
+		private int searchLookupCount;
 
 		@Override
 		public Post save(Post post) {
@@ -131,7 +182,15 @@ class ListPostsServiceTest {
 
 		@Override
 		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
+			listLookupCount++;
 			return pageResult;
+		}
+
+		@Override
+		public PostPageResult searchByKeywordOrderByCreatedAtDesc(String keyword, int page, int size) {
+			searchLookupCount++;
+			requestedKeyword = keyword;
+			return searchResult;
 		}
 	}
 

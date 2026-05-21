@@ -203,6 +203,11 @@ class UpdateCommentServiceTest {
 		public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
 			return new PostPageResult(List.of(), page, size, 0, 0, true, true);
 		}
+
+		@Override
+		public PostPageResult searchByKeywordOrderByCreatedAtDesc(String keyword, int page, int size) {
+			return new PostPageResult(List.of(), page, size, 0, 0, true, true);
+		}
 	}
 
 	private static class FakeCommentRepositoryPort implements CommentRepositoryPort {

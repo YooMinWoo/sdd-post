@@ -8,6 +8,7 @@
 - [CONVENTIONS.md](CONVENTIONS.md): 패키지, 명명, 코딩, 문서 작성 규칙
 - [TESTING.md](TESTING.md): 테스트 계층과 실행 기준
 - [DOMAIN_GLOSSARY.md](DOMAIN_GLOSSARY.md): 게시판 도메인 용어집
+- [DEPLOYMENT.md](DEPLOYMENT.md): EC2 Docker Compose 배포 가이드
 - [adr/0001-architecture-style.md](adr/0001-architecture-style.md): 아키텍처 스타일 결정 기록
 
 ## 기능 명세 위치
@@ -46,3 +47,5 @@
 - [015-comment-delete](../specs/015-comment-delete/spec.md): 댓글 작성자 본인 댓글 삭제
 - [016-post-update](../specs/016-post-update/spec.md): 게시글 작성자 본인 게시글 수정
 - [017-comment-update](../specs/017-comment-update/spec.md): 댓글 작성자 본인 댓글 수정
+- [018-post-search](../specs/018-post-search/spec.md): 게시글 제목과 본문 키워드 검색
+- [019-server-deployment](../specs/019-server-deployment/spec.md): EC2 Docker Compose 서버 배포 준비

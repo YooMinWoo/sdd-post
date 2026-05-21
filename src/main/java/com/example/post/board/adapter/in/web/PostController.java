@@ -155,9 +155,10 @@ public class PostController {
 	@ListPostsApiDocs
 	public ResponseEntity<ApiResponse<ListPostsResponse>> listPosts(
 			@RequestParam(defaultValue = "0") Integer page,
-			@RequestParam(defaultValue = "10") Integer size
+			@RequestParam(defaultValue = "10") Integer size,
+			@RequestParam(required = false) String keyword
 	) {
-		ListPostsResult result = listPostsUseCase.listPosts(new ListPostsQuery(page, size));
+		ListPostsResult result = listPostsUseCase.listPosts(new ListPostsQuery(page, size, keyword));
 
 		return ResponseEntity.ok(ApiResponse.success(
 				"게시글 목록을 조회했습니다.",
