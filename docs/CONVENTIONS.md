@@ -64,6 +64,7 @@ PostPersistenceAdapter
 - 신규 도메인/애플리케이션 검증 실패는 `IllegalArgumentException`으로 뭉뚱그리지 않고 의미 있는 예외 또는 안정적인 에러 코드로 표현한다.
 - 에러 코드는 bounded context별 enum으로 분리하고, 각 enum 값은 코드 문자열과 설명을 함께 제공한다.
 - 도메인 모델은 정적 팩터리와 private constructor로 생성 경로를 통제한다.
+- 도메인 엔티티는 setter 없이 도메인 행위 메서드로 상태를 변경할 수 있다.
 - 도메인 모델에는 `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`를 사용하지 않는다.
 
 ## Lombok 규칙

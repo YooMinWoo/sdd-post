@@ -24,13 +24,15 @@ public class PostPersistenceAdapter implements PostRepositoryPort {
 
 	@Override
 	public Optional<Post> findById(Long id) {
-		return postJpaRepository.findById(id)
+		return postJpaRepository.findByIdAndDeletedAtIsNull(id)
 				.map(PostJpaEntity::toDomain);
 	}
 
 	@Override
 	public PostPageResult findAllOrderByCreatedAtDesc(int page, int size) {
-		Page<PostJpaEntity> result = postJpaRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size));
+		Page<PostJpaEntity> result = postJpaRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc(
+				PageRequest.of(page, size)
+		);
 		return new PostPageResult(
 				result.getContent().stream()
 						.map(PostJpaEntity::toDomain)

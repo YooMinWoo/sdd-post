@@ -34,6 +34,19 @@ specs/001-post-create/
   acceptance.md
 ```
 
+## GitHub 작업 흐름
+
+- 기능 번호는 기존 `specs/` 디렉터리의 가장 큰 번호 다음 번호를 사용한다.
+- 기능 개발 브랜치명은 `{번호}-{기능명}` 형식을 사용한다.
+- 브랜치명에는 `codex/` 접두어를 붙이지 않는다.
+- 예시: `011-post-update`, `012-comment-create`
+- GitHub Issue는 해당 기능의 `spec.md`, `plan.md`, `acceptance.md` 내용을 기반으로 발행한다.
+- 기능 구현은 Issue 발행 후 `main` 브랜치 기준 새 기능 브랜치에서 진행한다.
+- 구현 완료 후에는 변경 요약, 검증 결과, 남은 확인 사항, 추천 `git commit` 메시지를 보고한다.
+- commit, push, PR 생성은 사용자가 명시적으로 요청한 경우에만 실행한다.
+- PR은 기능 브랜치에서 `main` 브랜치 대상으로 생성한다.
+- PR 본문은 저장소의 `.github/pull_request_template.md`를 기준으로 작성한다.
+
 ## 문서 역할
 
 - `spec.md`: 사용자 요구, 도메인 규칙, 용어, 범위와 비범위를 정의한다.

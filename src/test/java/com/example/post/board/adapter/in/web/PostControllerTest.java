@@ -1,13 +1,18 @@
 package com.example.post.board.adapter.in.web;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.DeletePostCommand;
+import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
@@ -40,8 +45,9 @@ class PostControllerTest {
 	private final FakeCreatePostUseCase createPostUseCase = new FakeCreatePostUseCase();
 	private final FakeReadPostUseCase readPostUseCase = new FakeReadPostUseCase();
 	private final FakeListPostsUseCase listPostsUseCase = new FakeListPostsUseCase();
+	private final FakeDeletePostUseCase deletePostUseCase = new FakeDeletePostUseCase();
 	private final MockMvc mockMvc = MockMvcBuilders
-			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase, listPostsUseCase))
+			.standaloneSetup(new PostController(createPostUseCase, readPostUseCase, listPostsUseCase, deletePostUseCase))
 			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 			.setControllerAdvice(new GlobalExceptionHandler(
 					Clock.fixed(Instant.parse("2026-05-20T00:00:00Z"), ZoneOffset.UTC)
@@ -236,6 +242,66 @@ class PostControllerTest {
 				.andExpect(jsonPath("$.path").value("/posts"));
 	}
 
+	@Test
+	void returnsNoContentWhenDeletingPost() throws Exception {
+		mockMvc.perform(delete("/posts/{postId}", 1L)
+						.with(authenticatedMember()))
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""));
+
+		assertEquals(1L, deletePostUseCase.command.postId());
+		assertEquals(1L, deletePostUseCase.command.requesterMemberId());
+	}
+
+	@Test
+	void returnsUnauthorizedForDeleteWithoutAuthentication() throws Exception {
+		mockMvc.perform(delete("/posts/{postId}", 1L))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("로그인이 필요합니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1"));
+	}
+
+	@Test
+	void returnsForbiddenForDeleteByNonAuthor() throws Exception {
+		deletePostUseCase.errorCode = BoardErrorCode.POST_DELETE_FORBIDDEN;
+
+		mockMvc.perform(delete("/posts/{postId}", 1L)
+						.with(authenticatedMember()))
+				.andExpect(status().isForbidden())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_DELETE_FORBIDDEN"))
+				.andExpect(jsonPath("$.message").value("게시글 삭제 권한이 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/1"));
+	}
+
+	@Test
+	void returnsNotFoundForDeleteMissingPost() throws Exception {
+		deletePostUseCase.errorCode = BoardErrorCode.POST_NOT_FOUND;
+
+		mockMvc.perform(delete("/posts/{postId}", 999L)
+						.with(authenticatedMember()))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("POST_NOT_FOUND"))
+				.andExpect(jsonPath("$.message").value("게시글을 찾을 수 없습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/999"));
+	}
+
+	@Test
+	void returnsBadRequestForDeleteInvalidPostId() throws Exception {
+		deletePostUseCase.errorCode = com.example.post.global.exception.GlobalErrorCode.INVALID_REQUEST;
+
+		mockMvc.perform(delete("/posts/{postId}", 0L)
+						.with(authenticatedMember()))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+				.andExpect(jsonPath("$.message").value("요청 값이 올바르지 않습니다."))
+				.andExpect(jsonPath("$.path").value("/posts/0"));
+	}
+
 	private static RequestPostProcessor authenticatedMember() {
 		return request -> {
 			SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
@@ -318,6 +384,20 @@ class PostControllerTest {
 					true,
 					true
 			);
+		}
+	}
+
+	private static class FakeDeletePostUseCase implements DeletePostUseCase {
+
+		private DeletePostCommand command;
+		private ErrorCode errorCode;
+
+		@Override
+		public void deletePost(DeletePostCommand command) {
+			this.command = command;
+			if (errorCode != null) {
+				throw new BusinessException(errorCode);
+			}
 		}
 	}
 }

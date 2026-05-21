@@ -1,8 +1,11 @@
 package com.example.post.board.domain.model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.example.post.board.exception.BoardErrorCode;
 import com.example.post.global.exception.BusinessException;
@@ -23,6 +26,62 @@ class PostTest {
 		assertEquals(1L, post.getAuthorMemberId());
 		assertEquals(createdAt, post.getCreatedAt());
 		assertNotNull(post.getCreatedAt());
+		assertFalse(post.isDeleted());
+		assertNull(post.getDeletedAt());
+	}
+
+	@Test
+	void deletesPostByAuthor() {
+		Post post = Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		);
+
+		post.deleteBy(2L, Instant.parse("2026-05-20T01:00:00Z"));
+
+		assertEquals(1L, post.getId());
+		assertTrue(post.isDeleted());
+		assertEquals(Instant.parse("2026-05-20T01:00:00Z"), post.getDeletedAt());
+	}
+
+	@Test
+	void rejectsDeleteByNonAuthor() {
+		Post post = Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z")
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> post.deleteBy(3L, Instant.parse("2026-05-20T01:00:00Z"))
+		);
+
+		assertEquals(BoardErrorCode.POST_DELETE_FORBIDDEN, exception.errorCode());
+	}
+
+	@Test
+	void rejectsDeleteAlreadyDeletedPost() {
+		Post post = Post.rehydrate(
+				1L,
+				"title",
+				"content",
+				2L,
+				Instant.parse("2026-05-20T00:00:00Z"),
+				Instant.parse("2026-05-20T01:00:00Z")
+		);
+
+		BusinessException exception = assertThrows(
+				BusinessException.class,
+				() -> post.deleteBy(2L, Instant.parse("2026-05-20T02:00:00Z"))
+		);
+
+		assertEquals(BoardErrorCode.POST_NOT_FOUND, exception.errorCode());
 	}
 
 	@Test

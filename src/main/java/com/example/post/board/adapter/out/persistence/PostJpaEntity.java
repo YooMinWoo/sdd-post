@@ -29,15 +29,19 @@ class PostJpaEntity {
 	@Column(nullable = false)
 	private Instant createdAt;
 
+	@Column
+	private Instant deletedAt;
+
 	protected PostJpaEntity() {
 	}
 
-	private PostJpaEntity(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
+	private PostJpaEntity(Long id, String title, String content, Long authorMemberId, Instant createdAt, Instant deletedAt) {
 		this.id = id;
 		this.title = title;
 		this.content = content;
 		this.authorMemberId = authorMemberId;
 		this.createdAt = createdAt;
+		this.deletedAt = deletedAt;
 	}
 
 	static PostJpaEntity from(Post post) {
@@ -46,11 +50,12 @@ class PostJpaEntity {
 				post.getTitle(),
 				post.getContent(),
 				post.getAuthorMemberId(),
-				post.getCreatedAt()
+				post.getCreatedAt(),
+				post.getDeletedAt()
 		);
 	}
 
 	Post toDomain() {
-		return Post.rehydrate(id, title, content, authorMemberId, createdAt);
+		return Post.rehydrate(id, title, content, authorMemberId, createdAt, deletedAt);
 	}
 }

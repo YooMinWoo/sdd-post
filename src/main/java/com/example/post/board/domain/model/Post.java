@@ -12,18 +12,20 @@ public class Post {
 	private static final int MAX_TITLE_LENGTH = 100;
 	private static final int MAX_CONTENT_LENGTH = 5_000;
 
-	private final Long id;
-	private final String title;
-	private final String content;
-	private final Long authorMemberId;
-	private final Instant createdAt;
+	private Long id;
+	private Long authorMemberId;
+	private String title;
+	private String content;
+	private Instant createdAt;
+	private Instant deletedAt;
 
-	private Post(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
+	private Post(Long id, String title, String content, Long authorMemberId, Instant createdAt, Instant deletedAt) {
 		this.id = id;
 		this.title = validateRequired("title", title, MAX_TITLE_LENGTH);
 		this.content = validateRequired("content", content, MAX_CONTENT_LENGTH);
 		this.authorMemberId = validateAuthorMemberId(authorMemberId);
 		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
+		this.deletedAt = deletedAt;
 	}
 
 	public static Post create(String title, String content, Long authorMemberId) {
@@ -31,14 +33,40 @@ public class Post {
 	}
 
 	public static Post create(String title, String content, Long authorMemberId, Instant createdAt) {
-		return new Post(null, title, content, authorMemberId, createdAt);
+		return new Post(null, title, content, authorMemberId, createdAt, null);
 	}
 
 	public static Post rehydrate(Long id, String title, String content, Long authorMemberId, Instant createdAt) {
+		return rehydrate(id, title, content, authorMemberId, createdAt, null);
+	}
+
+	public static Post rehydrate(
+			Long id,
+			String title,
+			String content,
+			Long authorMemberId,
+			Instant createdAt,
+			Instant deletedAt
+	) {
 		if (id == null) {
 			throw new BusinessException(GlobalErrorCode.INVALID_REQUEST);
 		}
-		return new Post(id, title, content, authorMemberId, createdAt);
+		return new Post(id, title, content, authorMemberId, createdAt, deletedAt);
+	}
+
+	public void deleteBy(Long requesterMemberId, Instant deletedAt) {
+		Long validatedRequesterMemberId = validateAuthorMemberId(requesterMemberId);
+		if (!authorMemberId.equals(validatedRequesterMemberId)) {
+			throw new BusinessException(BoardErrorCode.POST_DELETE_FORBIDDEN);
+		}
+		if (isDeleted()) {
+			throw new BusinessException(BoardErrorCode.POST_NOT_FOUND);
+		}
+		this.deletedAt = Objects.requireNonNull(deletedAt, "deletedAt must not be null");
+	}
+
+	public boolean isDeleted() {
+		return deletedAt != null;
 	}
 
 	private static String validateRequired(String fieldName, String value, int maxLength) {
@@ -95,5 +123,9 @@ public class Post {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public Instant getDeletedAt() {
+		return deletedAt;
 	}
 }

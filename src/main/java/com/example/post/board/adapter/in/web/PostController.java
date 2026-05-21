@@ -3,6 +3,8 @@ package com.example.post.board.adapter.in.web;
 import com.example.post.board.application.port.in.CreatePostCommand;
 import com.example.post.board.application.port.in.CreatePostResult;
 import com.example.post.board.application.port.in.CreatePostUseCase;
+import com.example.post.board.application.port.in.DeletePostCommand;
+import com.example.post.board.application.port.in.DeletePostUseCase;
 import com.example.post.board.application.port.in.ListPostsQuery;
 import com.example.post.board.application.port.in.ListPostsResult;
 import com.example.post.board.application.port.in.ListPostsUseCase;
@@ -14,6 +16,7 @@ import com.example.post.global.exception.BusinessException;
 import com.example.post.global.security.AuthenticatedMemberPrincipal;
 import com.example.post.global.web.ApiResponse;
 import com.example.post.global.web.swagger.CreatePostApiDocs;
+import com.example.post.global.web.swagger.DeletePostApiDocs;
 import com.example.post.global.web.swagger.ListPostsApiDocs;
 import com.example.post.global.web.swagger.ReadPostApiDocs;
 import com.example.post.member.exception.MemberErrorCode;
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,6 +44,7 @@ public class PostController {
 	private final CreatePostUseCase createPostUseCase;
 	private final ReadPostUseCase readPostUseCase;
 	private final ListPostsUseCase listPostsUseCase;
+	private final DeletePostUseCase deletePostUseCase;
 
 	@PostMapping
 	@CreatePostApiDocs
@@ -101,6 +106,20 @@ public class PostController {
 						result.last()
 				)
 		));
+	}
+
+	@DeleteMapping("/{postId}")
+	@DeletePostApiDocs
+	public ResponseEntity<Void> deletePost(
+			@PathVariable Long postId,
+			@AuthenticationPrincipal AuthenticatedMemberPrincipal principal
+	) {
+		if (principal == null) {
+			throw new BusinessException(MemberErrorCode.UNAUTHORIZED);
+		}
+		deletePostUseCase.deletePost(new DeletePostCommand(postId, principal.id()));
+
+		return ResponseEntity.noContent().build();
 	}
 
 	private static List<PostSummaryResponse> toPostSummaryResponses(List<PostSummaryResult> posts) {
