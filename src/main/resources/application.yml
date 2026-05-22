@@ -22,3 +22,7 @@ jwt:
   refresh-token:
     secret: ${JWT_REFRESH_TOKEN_SECRET:YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODk=}
     expiration-seconds: ${JWT_REFRESH_TOKEN_EXPIRATION_TIME:1209600}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}

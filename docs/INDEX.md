@@ -49,3 +49,4 @@
 - [017-comment-update](../specs/017-comment-update/spec.md): 댓글 작성자 본인 댓글 수정
 - [018-post-search](../specs/018-post-search/spec.md): 게시글 제목과 본문 키워드 검색
 - [019-server-deployment](../specs/019-server-deployment/spec.md): EC2 Docker Compose 서버 배포 준비
+- [020-frontend-web-client](../specs/020-frontend-web-client/spec.md): React 기반 프론트엔드 웹 클라이언트 구축
